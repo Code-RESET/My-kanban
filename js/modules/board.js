@@ -9,6 +9,7 @@ import { watchBoard, renameBoard, deleteBoard, saveColumns } from "../services/b
 import { watchCards, addCard, updateCard, moveCard, deleteCard, deleteCards, orderBetween } from "../services/cards-service.js";
 import { columnHtml, addColumnHtml } from "../components/kanban-column.js";
 import { openCardSheet } from "../components/card-sheet.js";
+import { columnAccent, findBottleneck, averageCycleTime, insightsHtml } from "../components/board-insights.js";
 import { enableDragDrop } from "../components/drag-drop.js";
 import { actionSheet, confirmDialog, promptDialog } from "../ui/sheet.js";
 import { shortId } from "../ui/dom.js";
@@ -28,6 +29,7 @@ export function renderBoard(container, user, [boardId] = []) {
         <h1 class="board-title" data-title></h1>
         <button class="icon-btn" data-action="board-menu" aria-label="Opciones del tablero">${icons.more}</button>
       </div>
+      <div data-insights></div>
       <div class="board" data-board><p class="muted center">Cargando…</p></div>
     </div>`;
 
@@ -36,6 +38,7 @@ export function renderBoard(container, user, [boardId] = []) {
   const pageEl = container.querySelector(".board-page");
   const titleEl = container.querySelector("[data-title]");
   const boardEl = container.querySelector("[data-board]");
+  const insightsEl = container.querySelector("[data-insights]");
   const uid = user.uid;
 
   let board = null;
@@ -67,6 +70,7 @@ export function renderBoard(container, user, [boardId] = []) {
     if (!boardLoaded) return;
     if (!board) {
       titleEl.textContent = "";
+      insightsEl.innerHTML = "";
       boardEl.innerHTML = `
         <div class="empty-state">
           <h2>Este tablero ya no existe</h2>
@@ -81,7 +85,27 @@ export function renderBoard(container, user, [boardId] = []) {
     boardEl.querySelectorAll(".column-cards").forEach((l) => (scrolls[l.dataset.columnId] = l.scrollTop));
     const scrollLeft = boardEl.scrollLeft;
 
-    boardEl.innerHTML = columns().map((col) => columnHtml(col, cardsOf(col.id))).join("") + addColumnHtml();
+    const cols = columns();
+    const bottleneckId = findBottleneck(cols, (id) => cardsOf(id).length);
+    const lastId = cols.length > 1 ? cols.at(-1).id : null;
+    const doneCards = lastId ? cardsOf(lastId) : [];
+
+    insightsEl.innerHTML = insightsHtml({
+      cycleMs: averageCycleTime(doneCards),
+      doneCount: doneCards.length,
+      bottleneck: cols.find((c) => c.id === bottleneckId) || null,
+    });
+
+    boardEl.innerHTML =
+      cols
+        .map((col, i) =>
+          columnHtml(col, cardsOf(col.id), {
+            accent: columnAccent(i, cols.length),
+            bottleneck: col.id === bottleneckId,
+            done: col.id === lastId,
+          })
+        )
+        .join("") + addColumnHtml();
 
     boardEl.scrollLeft = scrollLeft;
     boardEl.querySelectorAll(".column-cards").forEach((l) => (l.scrollTop = scrolls[l.dataset.columnId] || 0));

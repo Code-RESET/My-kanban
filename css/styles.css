@@ -773,3 +773,130 @@ h1, h2, h3, p { margin: 0; }
   transition: opacity 0.2s, transform 0.2s;
 }
 .toast.visible { opacity: 1; transform: translate(-50%, 0); }
+
+/* ============================================================
+   Flujo visual (columnas con color, cuello de botella, métricas)
+   Cada columna recibe data-accent según su posición (ver
+   components/board-insights.js). Los colores se definen en rgba
+   explícito para que funcione en Safari/Samsung sin color-mix().
+   ============================================================ */
+:root {
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Roboto Mono", monospace;
+}
+.column[data-accent="slate"]  { --col: #8e8e93; --col-soft: rgba(142, 142, 147, 0.08); --col-line: rgba(142, 142, 147, 0.28); }
+.column[data-accent="amber"]  { --col: #e08a00; --col-soft: rgba(255, 159, 10, 0.08);  --col-line: rgba(255, 159, 10, 0.35); }
+.column[data-accent="blue"]   { --col: #0a7aff; --col-soft: rgba(10, 132, 255, 0.07);  --col-line: rgba(10, 132, 255, 0.32); }
+.column[data-accent="purple"] { --col: #9b51e0; --col-soft: rgba(175, 82, 222, 0.07);  --col-line: rgba(175, 82, 222, 0.32); }
+.column[data-accent="pink"]   { --col: #e0306a; --col-soft: rgba(255, 55, 95, 0.07);   --col-line: rgba(255, 55, 95, 0.32); }
+.column[data-accent="green"]  { --col: #1f9d46; --col-soft: rgba(52, 199, 89, 0.08);   --col-line: rgba(52, 199, 89, 0.35); }
+
+:root[data-theme="dark"] .column[data-accent="slate"]  { --col: #a9a6c4; --col-line: rgba(169, 166, 196, 0.22); }
+:root[data-theme="dark"] .column[data-accent="amber"]  { --col: #ffb340; }
+:root[data-theme="dark"] .column[data-accent="blue"]   { --col: #64b5ff; }
+:root[data-theme="dark"] .column[data-accent="purple"] { --col: #c58cff; }
+:root[data-theme="dark"] .column[data-accent="pink"]   { --col: #ff6b93; }
+:root[data-theme="dark"] .column[data-accent="green"]  { --col: #4ce38a; }
+
+.column {
+  background: linear-gradient(180deg, var(--col-soft), transparent 140px), var(--column-bg);
+  border: 1px solid var(--col-line, var(--column-border));
+  transition: box-shadow 0.3s, border-color 0.3s;
+}
+.column-header { border-bottom: 1px solid var(--col-line); padding-bottom: 10px; margin-bottom: 8px; }
+.column-title {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--col);
+}
+.column-count { font-family: var(--font-mono); }
+
+/* Cuello de botella: la columna se pone roja y brilla.
+   :root + [data-accent] para ganarle a los colores por columna del modo oscuro. */
+:root .column.is-bottleneck[data-accent] {
+  --col: var(--danger);
+  --col-soft: rgba(255, 59, 48, 0.12);
+  --col-line: rgba(255, 59, 48, 0.6);
+  box-shadow: 0 0 0 1px rgba(255, 59, 48, 0.25), 0 8px 28px rgba(255, 59, 48, 0.25);
+}
+.column.is-bottleneck .column-count { background: var(--danger); color: #fff; }
+:root[data-theme="dark"] .column.is-bottleneck {
+  --col-soft: rgba(255, 70, 90, 0.2);
+  box-shadow: 0 0 0 1px rgba(255, 70, 90, 0.35), 0 0 36px rgba(255, 70, 90, 0.35);
+}
+
+/* Tarjetas terminadas */
+.card-title { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.card-check { color: var(--c-green); flex-shrink: 0; margin-top: 1px; }
+
+/* Modo oscuro: tarjetas con borde fino y barra de color con brillo */
+:root[data-theme="dark"] .card { border: 1px solid rgba(167, 139, 250, 0.12); }
+:root[data-theme="dark"] .card[data-color]::before { box-shadow: 0 0 10px 1px var(--card-color); }
+:root[data-theme="dark"] .column-cards { padding-top: 4px; }
+
+/* Panel de métricas */
+.insights {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 0 16px 12px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--separator);
+  border-radius: var(--radius-lg);
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.metric { display: flex; align-items: center; gap: 12px; }
+.metric-icon { color: var(--accent); }
+.metric-text { display: flex; flex-direction: column; line-height: 1.15; }
+.metric-label { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.06em; color: var(--text-2); }
+.metric-value { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+.metric-hint { font-size: 12px; color: var(--text-2); }
+.metric-trend { color: var(--danger); margin-left: 4px; }
+
+.insight-status { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; text-align: right; }
+.insight-note { font-size: 13px; color: var(--text-2); }
+.insight-note strong { color: var(--text); }
+.pill {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+.pill-ok { color: var(--c-green); background: rgba(52, 199, 89, 0.14); }
+.pill-alert { color: #fff; background: var(--danger); box-shadow: 0 0 14px rgba(255, 59, 48, 0.45); }
+
+.insights.is-alert { border-color: rgba(255, 59, 48, 0.55); box-shadow: 0 6px 24px rgba(255, 59, 48, 0.18); }
+.insights.is-alert .metric-icon,
+.insights.is-alert .metric-value { color: var(--danger); }
+
+/* Teléfono: panel compacto en dos líneas (métrica | estado) */
+@media (max-width: 767px) {
+  .insights { padding: 8px 12px; margin-bottom: 10px; gap: 6px 10px; flex-wrap: nowrap; }
+  .metric { gap: 8px; flex-shrink: 0; }
+  .metric-icon .icon { width: 22px; height: 22px; }
+  .metric-label { font-size: 11px; }
+  .metric-value { font-size: 20px; }
+  .metric-hint, .metric-trend { display: none; }
+  .insight-status { gap: 3px; min-width: 0; }
+  .insight-note { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+  .pill { font-size: 11px; padding: 2px 8px; }
+}
+
+/* Fondo en modo oscuro: resplandor morado + cuadrícula sutil */
+:root[data-theme="dark"] body {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(139, 92, 246, 0.28), transparent 70%),
+    linear-gradient(rgba(167, 139, 250, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(167, 139, 250, 0.045) 1px, transparent 1px);
+  background-size: 100% 100%, 36px 36px, 36px 36px;
+  background-attachment: fixed;
+}
+:root[data-theme="dark"] .large-title,
+:root[data-theme="dark"] .board-title { text-shadow: 0 0 24px rgba(139, 124, 255, 0.35); }
