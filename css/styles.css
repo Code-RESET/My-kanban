@@ -900,3 +900,45 @@ h1, h2, h3, p { margin: 0; }
 }
 :root[data-theme="dark"] .large-title,
 :root[data-theme="dark"] .board-title { text-shadow: 0 0 24px rgba(139, 124, 255, 0.35); }
+
+/* ---------- Botón flotante: ocultar/mostrar tareas hechas ---------- */
+.fab {
+  position: fixed;
+  right: max(16px, env(safe-area-inset-right, 0px));
+  bottom: calc(20px + var(--safe-bottom));
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border: 1px solid rgba(52, 199, 89, 0.45);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--c-green);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(52, 199, 89, 0.1);
+  transition: transform 0.15s, background 0.2s, color 0.2s;
+}
+.fab:active { transform: scale(0.95); }
+.fab-count {
+  min-width: 22px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(52, 199, 89, 0.16);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  text-align: center;
+}
+/* Activo (hechas ocultas): botón relleno para que se note que hay algo escondido */
+.fab.is-active { background: var(--c-green); color: #fff; border-color: transparent; }
+.fab.is-active .fab-count { background: rgba(255, 255, 255, 0.25); }
+:root[data-theme="dark"] .fab { box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5), 0 0 18px rgba(62, 224, 122, 0.25); }
+:root[data-theme="dark"] .fab.is-active { color: #06210f; }
+
+/* Espacio extra para que el botón no tape "Añadir tarjeta" */
+.board { padding-bottom: 76px; }
+@media (max-width: 767px) {
+  .fab { padding: 12px 14px; }
+}
