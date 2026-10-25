@@ -7,8 +7,7 @@
 
 <!-- PWA -->
 <link rel="manifest" href="manifest.json" />
-<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)" />
-<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
+<meta name="theme-color" content="#f2f2f7" />
 <link rel="apple-touch-icon" href="assets/icon-192.png" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
@@ -17,13 +16,24 @@
 
 <link rel="icon" href="assets/icon-192.png" />
 <link rel="stylesheet" href="css/styles.css" />
+
+<!-- Aplica el tema guardado ANTES de pintar, para evitar un destello blanco.
+     La lógica completa del tema vive en js/ui/theme.js. -->
+<script>
+  (function () {
+    var t = null;
+    try { t = localStorage.getItem("kanban-theme"); } catch (e) {}
+    if (!t) t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    document.documentElement.dataset.theme = t;
+  })();
+</script>
 </head>
 <body>
 
 <!-- ===================== PANTALLA DE LOGIN ===================== -->
 <section id="login-screen" class="screen">
   <div class="login-card">
-    <img src="assets/logo.svg" alt="Code-Reset" class="login-logo" />
+    <img src="assets/logo.svg" alt="Mi Kanban" class="brand-logo login-logo" />
     <h1 class="login-title">Mi Kanban</h1>
     <p class="login-subtitle" id="app-name-slot">Organiza tus pendientes</p>
 
@@ -46,14 +56,43 @@
 <!-- ===================== SHELL DE LA APP ===================== -->
 <section id="app-shell" class="screen" hidden>
   <header class="app-header">
-    <img src="assets/logo.svg" alt="Code-Reset" class="header-logo" />
+    <button id="menu-btn" class="header-btn" aria-label="Abrir menú" aria-expanded="false" aria-controls="app-drawer"></button>
+    <img src="assets/logo.svg" alt="Mi Kanban" class="brand-logo header-logo" />
     <span class="header-name">Mi Kanban</span>
+    <button id="theme-btn" class="header-btn" aria-label="Cambiar tema"></button>
   </header>
 
-  <!-- router.js pinta las pestañas según los módulos registrados.
-       En PC se ven arriba a la derecha; en teléfono abajo, como en iOS.
-       Va fuera del header: su backdrop-filter rompería el position: fixed. -->
-  <nav id="app-nav" class="tab-bar"></nav>
+  <!-- ===================== MENÚ HAMBURGUESA ===================== -->
+  <!-- Va fuera del header: su backdrop-filter rompería el position: fixed. -->
+  <div id="drawer-overlay" class="drawer-overlay"></div>
+  <aside id="app-drawer" class="drawer" aria-hidden="true" aria-label="Menú">
+    <div class="drawer-head">
+      <img src="assets/logo.svg" alt="" class="brand-logo drawer-logo" />
+      <div>
+        <p class="drawer-title">Mi Kanban</p>
+        <p class="drawer-email" id="drawer-email"></p>
+      </div>
+    </div>
+
+    <!-- router.js pinta aquí los links según los módulos registrados -->
+    <nav id="app-nav" class="drawer-nav"></nav>
+
+    <div class="drawer-section">
+      <label class="drawer-row">
+        <span>Modo oscuro</span>
+        <span class="switch">
+          <input type="checkbox" id="drawer-theme-switch" />
+          <span class="switch-track"></span>
+        </span>
+      </label>
+      <button class="drawer-row destructive" id="drawer-logout">Cerrar sesión</button>
+    </div>
+
+    <footer class="drawer-footer">
+      <p>Desarrollado por: <strong>Ing. Luis Ángel Díaz Bernal</strong></p>
+      <p>Compañía: <strong>CODE-RESET</strong></p>
+    </footer>
+  </aside>
 
   <main id="app-content" class="app-content">
     <!-- router.js inyecta aquí la vista activa -->
@@ -62,6 +101,8 @@
 
 <script type="module" src="js/router.js"></script>
 <script type="module" src="js/auth.js"></script>
+<script type="module" src="js/ui/drawer.js"></script>
+<script type="module" src="js/ui/brand.js"></script>
 
 <script>
   if ('serviceWorker' in navigator) {

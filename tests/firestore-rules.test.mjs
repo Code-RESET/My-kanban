@@ -55,6 +55,16 @@ const tests = {
     await assertFails(setDoc(doc(ana, "users/ana/boards/b1/cards/c2"), { ...card, color: "pink" }));
     await assertFails(setDoc(doc(ana, "users/ana/boards/b1/cards/c2"), { ...card, order: "1" }));
   },
+  "ícono personalizado: solo el dueño, solo imágenes": async () => {
+    const logo = { logo: "data:image/jpeg;base64,AAAA", updatedAt: now };
+    await assertSucceeds(setDoc(doc(ana, "users/ana/settings/app"), logo));
+    await assertSucceeds(setDoc(doc(ana, "users/ana/settings/app"), { logo: "", updatedAt: now }));
+    await assertFails(getDoc(doc(beto, "users/ana/settings/app")));
+    await assertFails(setDoc(doc(beto, "users/ana/settings/app"), logo));
+    await assertFails(setDoc(doc(ana, "users/ana/settings/app"), { logo: "javascript:alert(1)", updatedAt: now }));
+    await assertFails(setDoc(doc(ana, "users/ana/settings/app"), { logo: "data:image/jpeg;base64," + "A".repeat(300001), updatedAt: now }));
+    await assertFails(setDoc(doc(ana, "users/ana/settings/otro"), logo));
+  },
   "rutas fuera de users/{uid}/boards están cerradas": async () => {
     await assertFails(setDoc(doc(ana, "users/ana"), { role: "admin" }));
     await assertFails(setDoc(doc(ana, "config/global"), { x: 1 }));
