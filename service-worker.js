@@ -6,7 +6,7 @@
 // archivos base para forzar actualización en los teléfonos.
 // ============================================================
 
-const CACHE_VERSION = "mi-kanban-v3";
+const CACHE_VERSION = "mi-kanban-v5";
 const CORE_ASSETS = [
   "./",
   "./index.html",
@@ -21,8 +21,10 @@ const CORE_ASSETS = [
   "./js/services/boards-service.js",
   "./js/services/cards-service.js",
   "./js/services/profile-service.js",
+  "./js/components/board-insights.js",
   "./js/components/card-colors.js",
   "./js/components/card-sheet.js",
+  "./js/components/done-toggle.js",
   "./js/components/drag-drop.js",
   "./js/components/kanban-column.js",
   "./js/ui/brand.js",
