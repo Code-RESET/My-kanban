@@ -9,7 +9,11 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const DEFAULT_FB_CONFIG = {
   apiKey: "TU_API_KEY",
@@ -29,4 +33,9 @@ if (navigator.storage && navigator.storage.persist) {
 }
 
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+// Caché local de Firestore (IndexedDB): el tablero abre al instante,
+// funciona sin señal y sincroniza solo al volver la conexión.
+// Si el navegador no tiene IndexedDB, Firebase cae solo a memoria.
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+});

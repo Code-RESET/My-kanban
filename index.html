@@ -2,19 +2,20 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
-<title>Code-Reset App</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Mi Kanban</title>
 
 <!-- PWA -->
 <link rel="manifest" href="manifest.json" />
-<meta name="theme-color" content="#000000" />
+<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
 <link rel="apple-touch-icon" href="assets/icon-192.png" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="Code-Reset" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Mi Kanban" />
 
 <link rel="icon" href="assets/icon-192.png" />
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
@@ -23,20 +24,16 @@
 <section id="login-screen" class="screen">
   <div class="login-card">
     <img src="assets/logo.svg" alt="Code-Reset" class="login-logo" />
-    <h1 class="login-title">CODE-RESET</h1>
-    <p class="login-subtitle" id="app-name-slot">Nombre de la app</p>
+    <h1 class="login-title">Mi Kanban</h1>
+    <p class="login-subtitle" id="app-name-slot">Organiza tus pendientes</p>
 
-    <form id="login-form" autocomplete="off">
-      <label class="field">
-        <span>Correo</span>
-        <input type="email" id="login-email" required autocomplete="username" />
-      </label>
-      <label class="field">
-        <span>Contraseña</span>
-        <input type="password" id="login-password" required autocomplete="current-password" />
-      </label>
+    <form id="login-form" autocomplete="on">
+      <div class="input-group">
+        <input class="input" type="email" id="login-email" required autocomplete="username" placeholder="Correo" aria-label="Correo" />
+        <input class="input" type="password" id="login-password" required autocomplete="current-password" placeholder="Contraseña" aria-label="Contraseña" />
+      </div>
       <p id="login-error" class="error-text" hidden></p>
-      <button type="submit" id="login-btn" class="btn-primary">Entrar</button>
+      <button type="submit" id="login-btn" class="btn btn-primary btn-block">Entrar</button>
     </form>
 
     <footer class="login-footer">
@@ -50,9 +47,13 @@
 <section id="app-shell" class="screen" hidden>
   <header class="app-header">
     <img src="assets/logo.svg" alt="Code-Reset" class="header-logo" />
-    <nav id="app-nav" class="app-nav"><!-- router.js pinta los links según los módulos registrados --></nav>
-    <button id="logout-btn" class="btn-ghost">Salir</button>
+    <span class="header-name">Mi Kanban</span>
   </header>
+
+  <!-- router.js pinta las pestañas según los módulos registrados.
+       En PC se ven arriba a la derecha; en teléfono abajo, como en iOS.
+       Va fuera del header: su backdrop-filter rompería el position: fixed. -->
+  <nav id="app-nav" class="tab-bar"></nav>
 
   <main id="app-content" class="app-content">
     <!-- router.js inyecta aquí la vista activa -->
