@@ -6,7 +6,7 @@
 // archivos base para forzar actualización en los teléfonos.
 // ============================================================
 
-const CACHE_VERSION = "code-reset-v1";
+const CACHE_VERSION = "mi-kanban-v3";
 const CORE_ASSETS = [
   "./",
   "./index.html",
@@ -15,7 +15,24 @@ const CORE_ASSETS = [
   "./js/router.js",
   "./js/auth.js",
   "./js/firebase-config.js",
-  "./js/modules/dashboard.js",
+  "./js/modules/boards.js",
+  "./js/modules/board.js",
+  "./js/modules/settings.js",
+  "./js/services/boards-service.js",
+  "./js/services/cards-service.js",
+  "./js/services/profile-service.js",
+  "./js/components/card-colors.js",
+  "./js/components/card-sheet.js",
+  "./js/components/drag-drop.js",
+  "./js/components/kanban-column.js",
+  "./js/ui/brand.js",
+  "./js/ui/dom.js",
+  "./js/ui/drawer.js",
+  "./js/ui/icons.js",
+  "./js/ui/image-resize.js",
+  "./js/ui/sheet.js",
+  "./js/ui/theme.js",
+  "./js/ui/toast.js",
   "./assets/logo.svg",
   "./assets/icon-192.png",
   "./assets/icon-512.png"
