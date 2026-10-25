@@ -16,12 +16,12 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const DEFAULT_FB_CONFIG = {
-  apiKey: "TU_API_KEY",
-  authDomain: "TU_PROYECTO.firebaseapp.com",
-  projectId: "TU_PROYECTO",
-  storageBucket: "TU_PROYECTO.appspot.com",
-  messagingSenderId: "000000000000",
-  appId: "1:000000000000:web:xxxxxxxxxxxxxxxx"
+  apiKey: "AIzaSyDqj1kQ9a_IaTalK2bNOAbEdNnSBfb-NHE",
+  authDomain: "kanban-bdc28.firebaseapp.com",
+  projectId: "kanban-bdc28",
+  storageBucket: "kanban-bdc28.firebasestorage.app",
+  messagingSenderId: "586850156917",
+  appId: "1:586850156917:web:39979017beaf96a241133c"
 };
 
 const app = initializeApp(DEFAULT_FB_CONFIG);

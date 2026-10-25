@@ -6,7 +6,7 @@
 // archivos base para forzar actualización en los teléfonos.
 // ============================================================
 
-const CACHE_VERSION = "mi-kanban-v2";
+const CACHE_VERSION = "mi-kanban-v3";
 const CORE_ASSETS = [
   "./",
   "./index.html",
