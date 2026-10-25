@@ -49,6 +49,7 @@ loginForm.addEventListener("submit", async (e) => {
 });
 
 onAuthStateChanged(auth, (user) => {
+  document.getElementById("splash")?.remove();
   if (user) {
     loginScreen.hidden = true;
     appShell.hidden = false;

@@ -12,6 +12,7 @@
 import { renderBoards } from "./modules/boards.js";
 import { renderBoard } from "./modules/board.js";
 import { renderSettings } from "./modules/settings.js";
+import { renderNews } from "./modules/news.js";
 import { icons } from "./ui/icons.js";
 
 // Registro de módulos: agregar aquí cada módulo nuevo del proyecto.
@@ -23,6 +24,7 @@ import { icons } from "./ui/icons.js";
 const MODULES = [
   { path: "tableros", label: "Tableros", icon: icons.boards, render: renderBoards },
   { path: "tablero", navParent: "tableros", render: renderBoard },
+  { path: "novedades", label: "Novedades", icon: icons.sparkles, render: renderNews },
   { path: "ajustes", label: "Ajustes", icon: icons.settings, render: renderSettings },
 ];
 

@@ -30,8 +30,15 @@
 </head>
 <body>
 
+<!-- ===================== PANTALLA DE CARGA ===================== -->
+<!-- Se ve mientras Firebase recupera la sesión; auth.js la quita.
+     Así no aparece un instante el login al abrir la app ya logueado. -->
+<div id="splash" class="splash" aria-label="Cargando">
+  <img src="assets/logo.svg" alt="" class="brand-logo splash-logo" />
+</div>
+
 <!-- ===================== PANTALLA DE LOGIN ===================== -->
-<section id="login-screen" class="screen">
+<section id="login-screen" class="screen" hidden>
   <div class="login-card">
     <img src="assets/logo.svg" alt="Mi Kanban" class="brand-logo login-logo" />
     <h1 class="login-title">Mi Kanban</h1>
@@ -85,6 +92,10 @@
           <span class="switch-track"></span>
         </span>
       </label>
+      <button class="drawer-row" id="drawer-update">
+        <span class="drawer-row-main"><span id="drawer-update-icon"></span>Actualizar app</span>
+        <span class="drawer-version"><span class="update-dot" id="drawer-update-dot" hidden></span><span id="drawer-version"></span></span>
+      </button>
       <button class="drawer-row destructive" id="drawer-logout">Cerrar sesión</button>
     </div>
 
@@ -104,14 +115,15 @@
 <script type="module" src="js/ui/drawer.js"></script>
 <script type="module" src="js/ui/brand.js"></script>
 
+<!-- Respaldo: si Firebase no carga en 8 s (sin internet en la primera visita), mostrar el login. -->
 <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('service-worker.js').catch(err => {
-        console.warn('Service worker no registrado:', err);
-      });
-    });
-  }
+  setTimeout(function () {
+    var splash = document.getElementById("splash");
+    if (splash) { splash.remove(); document.getElementById("login-screen").hidden = false; }
+  }, 8000);
 </script>
+
+<!-- Registra el service worker y maneja las actualizaciones -->
+<script type="module" src="js/ui/updater.js"></script>
 </body>
 </html>
