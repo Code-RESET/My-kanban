@@ -68,7 +68,7 @@ export function insightsHtml({ cycleMs, doneCount, bottleneck }) {
 
   const status = bottleneck
     ? `<span class="pill pill-alert">cuello de botella</span>
-       <span class="insight-note">aquí se frena todo: <strong>${escapeHtml(bottleneck.name)}</strong></span>`
+       <span class="insight-note"><span class="note-long">aquí se frena todo:</span><span class="note-short">en</span> <strong>${escapeHtml(bottleneck.name)}</strong></span>`
     : `<span class="pill pill-ok">flujo estable</span>
        <span class="insight-note">sin columnas saturadas</span>`;
 

@@ -11,7 +11,8 @@ Tablero kanban personal, estilo iOS. PWA en HTML/CSS/JS puro (ES6 modules), sin 
 - **Flujo visual**: cada columna tiene su color (gris → ámbar → azul → verde) y las tarjetas de la última columna llevan ✓.
 - **Cuello de botella**: si una columna intermedia junta 4 o más tarjetas y es la más cargada, se pone roja y el panel lo avisa.
 - **Tiempo por tarea**: promedio de días desde que se crea una tarjeta hasta que llega a la última columna (se toma su última modificación como fecha de término).
-- **Botón flotante "Ocultar hechas"**: esconde la última columna para brincarte lo ya terminado; muestra cuántas hay y se recuerda en el dispositivo.
+- **Botón › en cada tarjeta**: la pasa a la siguiente columna con un toque (Por hacer → En curso → … → Hecho).
+- **Actualizar app y Novedades**: aviso de versión nueva, botón para actualizar sin reinstalar e historial de mejoras.
 - **Menú hamburguesa (☰)**: navegación, modo oscuro y cerrar sesión.
 - **Modo oscuro**: botón de luna/sol en el encabezado. Sigue al sistema hasta que eliges uno.
 - **Ícono personalizado**: en *Ajustes → Ícono de la app* eliges cualquier foto; se recorta cuadrada, se comprime (~15–40 KB) y se guarda en tu cuenta.
@@ -22,18 +23,20 @@ Tablero kanban personal, estilo iOS. PWA en HTML/CSS/JS puro (ES6 modules), sin 
 ```
 index.html                 Shell: login, header, menú lateral
 css/styles.css             Estilos (variables de color iOS, claro/oscuro)
+js/version.js              Versión de la app (único lugar)
+js/changelog.js            Historial que se muestra en Novedades
 js/router.js               Routing por hash; registro de páginas en MODULES
 js/auth.js                 Login y cambio login <-> app
 js/firebase-config.js      Credenciales de Firebase
 js/modules/                Una página por archivo
   boards.js                  #/tableros      lista de tableros
   board.js                   #/tablero/{id}  vista kanban
-  settings.js                #/ajustes       cuenta, ícono, tema, créditos
+  settings.js                #/ajustes       cuenta, ícono, tema, versión, créditos
+  news.js                    #/novedades     historial de versiones
   dashboard.js               plantilla para nuevos módulos (no registrada)
 js/components/             Piezas del tablero (solo UI)
   kanban-column.js           HTML de columnas y tarjetas
   board-insights.js          colores por columna, cuello de botella, tiempo por tarea
-  done-toggle.js             botón flotante para ocultar/mostrar tareas hechas
   card-sheet.js              hoja para crear/editar tarjeta
   drag-drop.js               arrastrar con mouse y dedo
   card-colors.js             colores de etiqueta
@@ -43,6 +46,7 @@ js/services/               Único lugar que habla con Firestore
   profile-service.js         ícono personalizado
 js/ui/                     Utilidades de interfaz reutilizables
   sheet.js                   hojas inferiores, menús, confirmar, pedir texto
+  updater.js                 busca/aplica actualizaciones y avisa novedades
   drawer.js                  menú hamburguesa
   theme.js                   modo claro/oscuro
   brand.js                   aplica el ícono personalizado
@@ -71,7 +75,7 @@ users/{uid}/settings/app                   { logo, updatedAt }
 3. Pega tu `firebaseConfig` en `js/firebase-config.js`.
 4. Publica las reglas: copia `firestore.rules` en *Firestore → Reglas* (o `npx firebase deploy --only firestore:rules`).
 5. GitHub Pages: Settings → Pages → rama `main`, carpeta `/root`.
-6. Si cambias archivos base, sube `CACHE_VERSION` en `service-worker.js`.
+6. Al publicar cambios, sube la versión en `js/version.js` (ver "Versiones y actualizaciones").
 
 ## Probar las reglas de seguridad
 
@@ -85,7 +89,19 @@ Cubre: el dueño puede todo en lo suyo; otro usuario o sin sesión no puede leer
 ## Sobre el ícono de la pantalla de inicio
 
 - **iPhone/iPad**: elige tu foto en Ajustes *antes* de "Compartir → Agregar a inicio"; iOS toma la foto como ícono. Si ya estaba instalada, elimínala y vuelve a agregarla.
-- **Android**: el ícono instalado sale de `manifest.json` (archivos `assets/icon-192.png` y `icon-512.png`), que no se puede cambiar desde la app. Para usar tu foto ahí, reemplaza esos dos PNG y sube `CACHE_VERSION`.
+- **Android**: el ícono instalado sale de `manifest.json` (archivos `assets/icon-192.png` y `icon-512.png`), que no se puede cambiar desde la app. Para usar tu foto ahí, reemplaza esos dos PNG y sube la versión en `js/version.js`.
+
+## Versiones y actualizaciones
+
+La versión vive en **un solo lugar**: `js/version.js`. El service worker la usa para nombrar su caché, así que ya no hay que tocar `CACHE_VERSION` a mano.
+
+**Para publicar una mejora:**
+1. Sube el número en `js/version.js` (ej. `1.3.0` → `1.4.0`).
+2. Agrega arriba en `js/changelog.js` qué cambió (sale en *Novedades*).
+3. Corre `node tests/version.test.mjs` (revisa que ambos coincidan).
+4. Merge a `main`.
+
+**Qué pasa en el teléfono:** la app revisa si hay versión nueva al abrirse, al volver a ella y cada 30 min. Si hay, muestra *"Versión X disponible · Actualizar"* y un punto rojo en ☰. Un toque y se recarga con la versión nueva, sin cerrar ni reinstalar. Después avisa *"Actualizado a vX · Ver novedades"*. También se puede buscar a mano en ☰ → **Actualizar app** o en **Ajustes**.
 
 ## Cómo agregar una página nueva
 

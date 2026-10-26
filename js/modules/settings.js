@@ -13,8 +13,10 @@ import { saveLogo } from "../services/profile-service.js";
 import { fileToSquareDataUrl } from "../ui/image-resize.js";
 import { DEFAULT_LOGO } from "../ui/brand.js";
 import { showToast, toastError } from "../ui/toast.js";
+import { APP_VERSION } from "../changelog.js";
+import { onUpdateState, updateNow } from "../ui/updater.js";
+import { icons } from "../ui/icons.js";
 
-export const APP_VERSION = "1.0.0";
 
 export function renderSettings(container, user) {
   container.innerHTML = `
@@ -64,7 +66,16 @@ export function renderSettings(container, user) {
       <p class="list-caption">Acerca de</p>
       <ul class="list">
         <li class="list-row static"><span class="list-title">App</span><span class="list-value">Mi Kanban</span></li>
-        <li class="list-row static"><span class="list-title">Versión</span><span class="list-value">${APP_VERSION}</span></li>
+        <li class="list-row">
+          <a class="list-link" href="#/novedades">
+            <span class="list-text"><span class="list-title">Versión</span></span>
+            <span class="list-value">v${APP_VERSION}</span>
+            <span class="list-chevron">${icons.chevron}</span>
+          </a>
+        </li>
+        <li class="list-row">
+          <button class="list-button" data-action="update" data-update-btn>Buscar actualización</button>
+        </li>
         <li class="list-row static"><span class="list-title">Desarrollado por</span><span class="list-value">Ing. Luis Ángel Díaz Bernal</span></li>
         <li class="list-row static"><span class="list-title">Compañía</span><span class="list-value">CODE-RESET</span></li>
       </ul>
@@ -108,5 +119,14 @@ export function renderSettings(container, user) {
     }
   });
 
-  return stopTheme;
+  const updateBtn = container.querySelector("[data-update-btn]");
+  updateBtn.addEventListener("click", updateNow);
+  const stopUpdates = onUpdateState((st) => {
+    updateBtn.textContent = st.available ? `Instalar v${st.nextVersion || "nueva"}` : "Buscar actualización";
+  });
+
+  return () => {
+    stopTheme();
+    stopUpdates();
+  };
 }

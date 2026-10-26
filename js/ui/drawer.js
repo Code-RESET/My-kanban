@@ -2,7 +2,8 @@
 // ui/drawer.js
 // Menú hamburguesa: panel lateral con la navegación (la pinta
 // router.js dentro de #app-nav), el interruptor de modo oscuro
-// y cerrar sesión. También conecta el botón de tema del header.
+// "Actualizar app" y cerrar sesión. También conecta el botón de
+// tema del header.
 // ============================================================
 
 import { auth } from "../firebase-config.js";
@@ -10,6 +11,7 @@ import { signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
 import { getTheme, toggleTheme, setTheme, onThemeChange } from "./theme.js";
 import { confirmDialog } from "./sheet.js";
 import { icons } from "./icons.js";
+import { onUpdateState, updateNow } from "./updater.js";
 
 const drawer = document.getElementById("app-drawer");
 const overlay = document.getElementById("drawer-overlay");
@@ -57,6 +59,18 @@ themeBtn.addEventListener("click", toggleTheme);
 themeSwitch.addEventListener("change", () => setTheme(themeSwitch.checked ? "dark" : "light"));
 onThemeChange(syncTheme);
 syncTheme(getTheme());
+
+// Actualizar app: muestra la versión instalada y un punto si hay una nueva.
+document.getElementById("drawer-update-icon").innerHTML = icons.refresh;
+document.getElementById("drawer-update").addEventListener("click", () => {
+  closeDrawer();
+  updateNow();
+});
+onUpdateState((s) => {
+  document.getElementById("drawer-version").textContent = s.available ? `v${s.nextVersion || "nueva"}` : `v${s.current}`;
+  document.getElementById("drawer-update-dot").hidden = !s.available;
+  menuBtn.classList.toggle("has-update", s.available);
+});
 
 document.getElementById("drawer-logout").addEventListener("click", async () => {
   closeDrawer();

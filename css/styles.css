@@ -901,44 +901,181 @@ h1, h2, h3, p { margin: 0; }
 :root[data-theme="dark"] .large-title,
 :root[data-theme="dark"] .board-title { text-shadow: 0 0 24px rgba(139, 124, 255, 0.35); }
 
-/* ---------- Botón flotante: ocultar/mostrar tareas hechas ---------- */
-.fab {
+/* ---------- Botón › para pasar la tarjeta a la siguiente columna ---------- */
+.card.has-advance { padding-right: 50px; }
+.card-advance {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  width: 34px;
+  height: 34px;
+  margin-top: -17px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: var(--fill);
+  color: var(--accent);
+  cursor: pointer;
+  transition: transform 0.12s, background 0.15s;
+}
+.card-advance .icon { width: 20px; height: 20px; }
+.card-advance:hover { background: var(--accent); color: #fff; }
+.card-advance:active { transform: scale(0.88); background: var(--accent); color: #fff; }
+.card-advance:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+:root[data-theme="dark"] .card-advance { box-shadow: 0 0 0 1px rgba(139, 124, 255, 0.35), 0 0 12px rgba(139, 124, 255, 0.25); }
+
+/* Salida rápida hacia la derecha al tocar › */
+.card.card-leaving { animation: card-leave 0.18s ease-in forwards; pointer-events: none; }
+@keyframes card-leave {
+  to { transform: translateX(40px); opacity: 0; }
+}
+
+/* Las píldoras de estado nunca se parten en dos renglones */
+.pill { white-space: nowrap; }
+
+/* ============================================================
+   Actualizaciones y Novedades (js/ui/updater.js, modules/news.js)
+   ============================================================ */
+
+/* Aviso "Nueva versión disponible": arriba, debajo del encabezado */
+.update-banner {
   position: fixed;
-  right: max(16px, env(safe-area-inset-right, 0px));
-  bottom: calc(20px + var(--safe-bottom));
-  z-index: 30;
+  top: calc(var(--header-h) + var(--safe-top) + 10px);
+  left: 50%;
+  z-index: 35; /* sobre el tablero y el botón flotante, debajo del menú y las hojas */
+  width: min(520px, calc(100vw - 24px));
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px 10px 16px;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  border: 1px solid rgba(139, 124, 255, 0.45);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25), 0 0 24px rgba(139, 124, 255, 0.25);
+  transform: translate(-50%, -16px);
+  opacity: 0;
+  transition: transform 0.25s, opacity 0.25s;
+}
+.update-banner.visible { transform: translate(-50%, 0); opacity: 1; }
+.update-text { flex: 1; display: flex; flex-direction: column; font-size: 13px; color: var(--text-2); min-width: 0; }
+.update-text strong { font-size: 15px; color: var(--text); }
+.update-btn {
+  padding: 9px 14px;
+  border: none;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.update-close {
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 50%;
+  background: var(--fill);
+  color: var(--text-2);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* Menú: fila "Actualizar app" con versión y punto de aviso */
+.drawer-row-main { display: inline-flex; align-items: center; gap: 12px; }
+.drawer-row-main .icon { color: var(--accent); }
+.drawer-version {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  border: 1px solid rgba(52, 199, 89, 0.45);
-  border-radius: 999px;
-  background: var(--surface);
-  color: var(--c-green);
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(52, 199, 89, 0.1);
-  transition: transform 0.15s, background 0.2s, color 0.2s;
-}
-.fab:active { transform: scale(0.95); }
-.fab-count {
-  min-width: 22px;
-  padding: 1px 7px;
-  border-radius: 999px;
-  background: rgba(52, 199, 89, 0.16);
+  gap: 6px;
   font-family: var(--font-mono);
   font-size: 13px;
-  text-align: center;
+  color: var(--text-2);
 }
-/* Activo (hechas ocultas): botón relleno para que se note que hay algo escondido */
-.fab.is-active { background: var(--c-green); color: #fff; border-color: transparent; }
-.fab.is-active .fab-count { background: rgba(255, 255, 255, 0.25); }
-:root[data-theme="dark"] .fab { box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5), 0 0 18px rgba(62, 224, 122, 0.25); }
-:root[data-theme="dark"] .fab.is-active { color: #06210f; }
+.update-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--danger);
+  box-shadow: 0 0 8px var(--danger);
+}
+/* Punto rojo sobre el ☰ cuando hay versión nueva */
+.header-btn { position: relative; }
+#menu-btn.has-update::after {
+  content: "";
+  position: absolute;
+  top: 7px;
+  right: 6px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--danger);
+  box-shadow: 0 0 0 2px var(--bg);
+}
 
-/* Espacio extra para que el botón no tape "Añadir tarjeta" */
-.board { padding-bottom: 76px; }
-@media (max-width: 767px) {
-  .fab { padding: 12px 14px; }
+/* Página Novedades */
+.version-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 22px 16px;
+  margin-bottom: 20px;
+  text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--separator);
+  border-radius: var(--radius-lg);
+}
+.version-label { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.06em; color: var(--text-2); }
+.version-number { font-size: 34px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 10px; }
+:root[data-theme="dark"] .version-number { text-shadow: 0 0 24px rgba(139, 124, 255, 0.45); }
+
+.release {
+  position: relative;
+  padding: 14px 16px 14px 18px;
+  margin-bottom: 12px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--separator);
+}
+.release.is-current { border-color: rgba(52, 199, 89, 0.45); }
+.release-header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.release-pill { color: var(--accent); background: var(--fill); }
+.release-date { margin-left: auto; font-size: 12px; color: var(--text-2); }
+.release-title { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+.release-items { margin: 0; padding-left: 20px; color: var(--text-2); font-size: 15px; line-height: 1.5; }
+
+/* Pantalla de carga mientras se recupera la sesión */
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+}
+.splash-logo {
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  animation: splash-pulse 1.2s ease-in-out infinite;
+}
+@keyframes splash-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0.92); opacity: 0.7; }
+}
+
+/* Teléfonos angostos (≤ 420px): el estado baja a su propio renglón para no encimarse */
+@media (max-width: 420px) {
+  .insights { flex-wrap: wrap; }
+  .insight-status { width: 100%; flex-direction: row; align-items: center; flex-wrap: nowrap; }
+  .note-long { display: none; }
+}
+/* Texto corto ("en Revisión") solo en teléfonos angostos */
+@media (min-width: 421px) {
+  .note-short { display: none; }
 }

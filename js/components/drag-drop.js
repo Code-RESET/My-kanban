@@ -27,6 +27,7 @@ export function enableDragDrop(root, { onDrop, onEnd }) {
     if (drag || pending || e.button !== 0) return;
     const card = e.target.closest(".card");
     if (!card || !root.contains(card)) return;
+    if (e.target.closest("button")) return; // el botón › de la tarjeta no inicia arrastre
 
     pending = { card, pointerId: e.pointerId, x: e.clientX, y: e.clientY, type: e.pointerType };
     if (e.pointerType !== "mouse") {
