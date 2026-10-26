@@ -5,6 +5,8 @@ Tablero kanban personal, estilo iOS. PWA en HTML/CSS/JS puro (ES6 modules), sin 
 ## Qué hace
 
 - **Tableros**: crea varios (Personal, Casa, Trabajo…). Cada uno inicia con *Por hacer → En curso → Hecho*.
+- **Tablero de control**: la lista de Tableros muestra el avance de cada uno (barra por colores, % terminado) y avisa cuello de botella y tareas vencidas.
+- **Mapa del flujo (teléfono)**: arriba del tablero, una pastilla por columna con su conteo; marca dónde estás y al tocarla salta a esa columna.
 - **Columnas**: añadir, renombrar, mover izquierda/derecha y eliminar.
 - **Tarjetas**: título, notas, fecha límite (en rojo si ya venció) y etiqueta de color.
 - **Mover tarjetas**: arrastrando (en teléfono: mantener presionada y arrastrar) o desde la hoja de la tarjeta → "Columna".
@@ -29,7 +31,7 @@ js/router.js               Routing por hash; registro de páginas en MODULES
 js/auth.js                 Login y cambio login <-> app
 js/firebase-config.js      Credenciales de Firebase
 js/modules/                Una página por archivo
-  boards.js                  #/tableros      lista de tableros
+  boards.js                  #/tableros      tablero de control con todos los tableros
   board.js                   #/tablero/{id}  vista kanban
   settings.js                #/ajustes       cuenta, ícono, tema, versión, créditos
   news.js                    #/novedades     historial de versiones
@@ -37,6 +39,8 @@ js/modules/                Una página por archivo
 js/components/             Piezas del tablero (solo UI)
   kanban-column.js           HTML de columnas y tarjetas
   board-insights.js          colores por columna, cuello de botella, tiempo por tarea
+  board-summary.js           resumen de cada tablero para la lista (barra, %, alertas)
+  flow-map.js                mapa del flujo con pastillas (teléfono)
   card-sheet.js              hoja para crear/editar tarjeta
   drag-drop.js               arrastrar con mouse y dedo
   card-colors.js             colores de etiqueta

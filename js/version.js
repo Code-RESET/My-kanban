@@ -12,4 +12,4 @@
 //   2. Agregar arriba en js/changelog.js qué cambió.
 // ============================================================
 
-self.APP_VERSION = "1.3.0";
+self.APP_VERSION = "1.4.0";

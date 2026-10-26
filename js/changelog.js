@@ -11,6 +11,16 @@ export const APP_VERSION = globalThis.APP_VERSION;
 
 export const CHANGELOG = [
   {
+    version: "1.4.0",
+    date: "2026-10-26",
+    title: "Ve tu avance de un vistazo",
+    items: [
+      "Tableros muestra el avance de cada uno: barra por colores y % terminado.",
+      "Avisos de cuello de botella y tareas vencidas sin entrar al tablero.",
+      "En el teléfono, mapa del flujo arriba del tablero: toca una columna para saltar a ella.",
+    ],
+  },
+  {
     version: "1.3.0",
     date: "2026-10-26",
     title: "Mover rápido y actualizar sin reinstalar",
