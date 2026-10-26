@@ -10,7 +10,6 @@ import { watchCards, addCard, updateCard, moveCard, deleteCard, deleteCards, ord
 import { columnHtml, addColumnHtml } from "../components/kanban-column.js";
 import { openCardSheet } from "../components/card-sheet.js";
 import { columnAccent, findBottleneck, averageCycleTime, insightsHtml } from "../components/board-insights.js";
-import { loadHideDone, saveHideDone, doneToggleHtml } from "../components/done-toggle.js";
 import { enableDragDrop } from "../components/drag-drop.js";
 import { actionSheet, confirmDialog, promptDialog } from "../ui/sheet.js";
 import { shortId } from "../ui/dom.js";
@@ -32,7 +31,6 @@ export function renderBoard(container, user, [boardId] = []) {
       </div>
       <div data-insights></div>
       <div class="board" data-board><p class="muted center">Cargando…</p></div>
-      <div data-fab></div>
     </div>`;
 
   // Los eventos van en la raíz de la página (no en container, que se
@@ -41,14 +39,12 @@ export function renderBoard(container, user, [boardId] = []) {
   const titleEl = container.querySelector("[data-title]");
   const boardEl = container.querySelector("[data-board]");
   const insightsEl = container.querySelector("[data-insights]");
-  const fabEl = container.querySelector("[data-fab]");
   const uid = user.uid;
 
   let board = null;
   let cards = [];
   let boardLoaded = false;
   let redrawPending = false;
-  let hideDone = loadHideDone();
 
   // ---------- Lectura de estado ----------
 
@@ -64,12 +60,11 @@ export function renderBoard(container, user, [boardId] = []) {
 
   const lastOrder = (columnId) => cardsOf(columnId).at(-1)?.order ?? null;
 
-  // La última columna se considera "Hecho" (si hay más de una).
-  const doneColumn = () => (columns().length > 1 ? columns().at(-1) : null);
-
-  // Si la tarjeta terminó en la columna oculta, se avisa para que no parezca perdida.
-  function noticeIfHidden(columnId) {
-    if (hideDone && columnId === doneColumn()?.id) showToast(`Movida a "${doneColumn().name}" (oculta)`);
+  // Columna siguiente a la de la tarjeta (las huérfanas cuentan como de la primera).
+  function nextColumnOf(card) {
+    const cols = columns();
+    const index = Math.max(0, cols.findIndex((c) => c.id === card.columnId));
+    return cols[index + 1] || null;
   }
 
   // ---------- Pintado ----------
@@ -83,7 +78,6 @@ export function renderBoard(container, user, [boardId] = []) {
     if (!board) {
       titleEl.textContent = "";
       insightsEl.innerHTML = "";
-      fabEl.innerHTML = "";
       boardEl.innerHTML = `
         <div class="empty-state">
           <h2>Este tablero ya no existe</h2>
@@ -109,22 +103,16 @@ export function renderBoard(container, user, [boardId] = []) {
       bottleneck: cols.find((c) => c.id === bottleneckId) || null,
     });
 
-    const doneCol = doneColumn();
-    fabEl.innerHTML = doneCol
-      ? doneToggleHtml({ hidden: hideDone, count: doneCards.length, columnName: doneCol.name })
-      : "";
-
-    // Con "ocultar hechas" activo, la última columna no se pinta (pero sí cuenta en las métricas).
     boardEl.innerHTML =
       cols
-        .map((col, i) => {
-          if (hideDone && col.id === lastId) return "";
-          return columnHtml(col, cardsOf(col.id), {
+        .map((col, i) =>
+          columnHtml(col, cardsOf(col.id), {
             accent: columnAccent(i, cols.length),
             bottleneck: col.id === bottleneckId,
             done: col.id === lastId,
-          });
-        })
+            next: cols[i + 1] || null,
+          })
+        )
         .join("") + addColumnHtml();
 
     boardEl.scrollLeft = scrollLeft;
@@ -138,7 +126,6 @@ export function renderBoard(container, user, [boardId] = []) {
     if (result?.action !== "save") return;
     const data = result.data;
     addCard(uid, boardId, { ...data, order: orderBetween(lastOrder(data.columnId), null) }).catch(toastError);
-    noticeIfHidden(data.columnId);
   }
 
   async function onOpenCard(cardId) {
@@ -153,13 +140,20 @@ export function renderBoard(container, user, [boardId] = []) {
     const changes = { ...result.data };
     if (changes.columnId !== card.columnId) changes.order = orderBetween(lastOrder(changes.columnId), null);
     updateCard(uid, boardId, card.id, changes).catch(toastError);
-    if (changes.columnId !== card.columnId) noticeIfHidden(changes.columnId);
   }
 
-  function onToggleDone() {
-    hideDone = !hideDone;
-    saveHideDone(hideDone);
-    draw();
+  // Botón › de la tarjeta: la pasa al final de la siguiente columna.
+  // Una animación corta de salida confirma el movimiento antes de guardar.
+  function onAdvance(cardId, button) {
+    const card = cards.find((c) => c.id === cardId);
+    const next = card && nextColumnOf(card);
+    if (!next) return;
+    button.disabled = true;
+    button.closest(".card")?.classList.add("card-leaving");
+    setTimeout(() => {
+      moveCard(uid, boardId, card.id, next.id, orderBetween(lastOrder(next.id), null)).catch(toastError);
+      showToast(`→ ${next.name}`);
+    }, 180);
   }
 
   function onDrop({ cardId, columnId, prevId, nextId }) {
@@ -240,12 +234,12 @@ export function renderBoard(container, user, [boardId] = []) {
   pageEl.addEventListener("click", (e) => {
     const actionEl = e.target.closest("[data-action]");
     if (actionEl) {
-      const { action, columnId } = actionEl.dataset;
+      const { action, columnId, cardId } = actionEl.dataset;
       if (action === "add-card") onAddCard(columnId);
       if (action === "add-column") onAddColumn();
       if (action === "column-menu") onColumnMenu(columnId);
       if (action === "board-menu") onBoardMenu();
-      if (action === "toggle-done") onToggleDone();
+      if (action === "advance") onAdvance(cardId, actionEl);
       return;
     }
     const cardEl = e.target.closest(".card");
@@ -254,6 +248,7 @@ export function renderBoard(container, user, [boardId] = []) {
 
   pageEl.addEventListener("keydown", (e) => {
     const cardEl = e.target.closest?.(".card");
+    if (e.target.closest?.("button")) return; // el botón › maneja su propio Enter
     if (cardEl && (e.key === "Enter" || e.key === " ")) {
       e.preventDefault();
       onOpenCard(cardEl.dataset.cardId);

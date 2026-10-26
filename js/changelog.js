@@ -12,13 +12,15 @@ export const APP_VERSION = globalThis.APP_VERSION;
 export const CHANGELOG = [
   {
     version: "1.3.0",
-    date: "2026-10-25",
-    title: "Actualizaciones sin reinstalar",
+    date: "2026-10-26",
+    title: "Mover rápido y actualizar sin reinstalar",
     items: [
+      "Botón › en cada tarjeta para pasarla a la siguiente columna con un toque.",
       "Botón «Actualizar app» en el menú y en Ajustes.",
       "Aviso automático cuando hay una versión nueva: un toque y listo.",
       "Página de Novedades con el historial de mejoras.",
       "La app funciona mejor sin conexión.",
+      "Se quitó el botón «Ocultar hechas».",
     ],
   },
   {

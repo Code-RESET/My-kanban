@@ -11,7 +11,7 @@ Tablero kanban personal, estilo iOS. PWA en HTML/CSS/JS puro (ES6 modules), sin 
 - **Flujo visual**: cada columna tiene su color (gris → ámbar → azul → verde) y las tarjetas de la última columna llevan ✓.
 - **Cuello de botella**: si una columna intermedia junta 4 o más tarjetas y es la más cargada, se pone roja y el panel lo avisa.
 - **Tiempo por tarea**: promedio de días desde que se crea una tarjeta hasta que llega a la última columna (se toma su última modificación como fecha de término).
-- **Botón flotante "Ocultar hechas"**: esconde la última columna para brincarte lo ya terminado; muestra cuántas hay y se recuerda en el dispositivo.
+- **Botón › en cada tarjeta**: la pasa a la siguiente columna con un toque (Por hacer → En curso → … → Hecho).
 - **Actualizar app y Novedades**: aviso de versión nueva, botón para actualizar sin reinstalar e historial de mejoras.
 - **Menú hamburguesa (☰)**: navegación, modo oscuro y cerrar sesión.
 - **Modo oscuro**: botón de luna/sol en el encabezado. Sigue al sistema hasta que eliges uno.
@@ -37,7 +37,6 @@ js/modules/                Una página por archivo
 js/components/             Piezas del tablero (solo UI)
   kanban-column.js           HTML de columnas y tarjetas
   board-insights.js          colores por columna, cuello de botella, tiempo por tarea
-  done-toggle.js             botón flotante para ocultar/mostrar tareas hechas
   card-sheet.js              hoja para crear/editar tarjeta
   drag-drop.js               arrastrar con mouse y dedo
   card-colors.js             colores de etiqueta

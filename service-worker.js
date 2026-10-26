@@ -34,7 +34,6 @@ const CORE_ASSETS = [
   "./js/components/board-insights.js",
   "./js/components/card-colors.js",
   "./js/components/card-sheet.js",
-  "./js/components/done-toggle.js",
   "./js/components/drag-drop.js",
   "./js/components/kanban-column.js",
   "./js/ui/brand.js",
