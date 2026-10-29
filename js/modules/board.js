@@ -11,6 +11,7 @@ import { columnHtml, addColumnHtml } from "../components/kanban-column.js";
 import { openCardSheet } from "../components/card-sheet.js";
 import { columnAccent, findBottleneck, averageCycleTime, insightsHtml } from "../components/board-insights.js";
 import { enableDragDrop } from "../components/drag-drop.js";
+import { flowMapHtml, visibleColumnId, markActiveChip } from "../components/flow-map.js";
 import { actionSheet, confirmDialog, promptDialog } from "../ui/sheet.js";
 import { shortId } from "../ui/dom.js";
 import { icons } from "../ui/icons.js";
@@ -30,6 +31,7 @@ export function renderBoard(container, user, [boardId] = []) {
         <button class="icon-btn" data-action="board-menu" aria-label="Opciones del tablero">${icons.more}</button>
       </div>
       <div data-insights></div>
+      <div data-flow></div>
       <div class="board" data-board><p class="muted center">Cargando…</p></div>
     </div>`;
 
@@ -39,6 +41,7 @@ export function renderBoard(container, user, [boardId] = []) {
   const titleEl = container.querySelector("[data-title]");
   const boardEl = container.querySelector("[data-board]");
   const insightsEl = container.querySelector("[data-insights]");
+  const flowEl = container.querySelector("[data-flow]");
   const uid = user.uid;
 
   let board = null;
@@ -78,6 +81,7 @@ export function renderBoard(container, user, [boardId] = []) {
     if (!board) {
       titleEl.textContent = "";
       insightsEl.innerHTML = "";
+      flowEl.innerHTML = "";
       boardEl.innerHTML = `
         <div class="empty-state">
           <h2>Este tablero ya no existe</h2>
@@ -103,6 +107,16 @@ export function renderBoard(container, user, [boardId] = []) {
       bottleneck: cols.find((c) => c.id === bottleneckId) || null,
     });
 
+    flowEl.innerHTML = flowMapHtml(
+      cols.map((col, i) => ({
+        id: col.id,
+        name: col.name,
+        accent: columnAccent(i, cols.length),
+        count: cardsOf(col.id).length,
+        bottleneck: col.id === bottleneckId,
+      }))
+    );
+
     boardEl.innerHTML =
       cols
         .map((col, i) =>
@@ -117,7 +131,32 @@ export function renderBoard(container, user, [boardId] = []) {
 
     boardEl.scrollLeft = scrollLeft;
     boardEl.querySelectorAll(".column-cards").forEach((l) => (l.scrollTop = scrolls[l.dataset.columnId] || 0));
+    activeColumnId = null;
+    updateActiveChip();
   }
+
+  // ---------- Mapa del flujo (teléfono) ----------
+
+  let activeColumnId = null;
+  let scrollFrame = 0;
+
+  function updateActiveChip() {
+    const id = visibleColumnId(boardEl);
+    if (id && id !== activeColumnId) {
+      activeColumnId = id;
+      markActiveChip(flowEl, id);
+    }
+  }
+
+  function jumpToColumn(columnId) {
+    const col = boardEl.querySelector(`.column[data-column-id="${columnId}"]`);
+    if (col) boardEl.scrollTo({ left: col.offsetLeft - 16, behavior: "smooth" });
+  }
+
+  boardEl.addEventListener("scroll", () => {
+    cancelAnimationFrame(scrollFrame);
+    scrollFrame = requestAnimationFrame(updateActiveChip);
+  });
 
   // ---------- Tarjetas ----------
 
@@ -240,6 +279,7 @@ export function renderBoard(container, user, [boardId] = []) {
       if (action === "column-menu") onColumnMenu(columnId);
       if (action === "board-menu") onBoardMenu();
       if (action === "advance") onAdvance(cardId, actionEl);
+      if (action === "jump") jumpToColumn(columnId);
       return;
     }
     const cardEl = e.target.closest(".card");
