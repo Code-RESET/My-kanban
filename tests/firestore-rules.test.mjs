@@ -10,7 +10,7 @@
 import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 import { initializeTestEnvironment, assertSucceeds, assertFails } from "@firebase/rules-unit-testing";
-import { doc, setDoc, getDoc, updateDoc, deleteDoc, collection, getDocs } from "firebase/firestore";
+import { doc, setDoc, getDoc, updateDoc, deleteDoc, deleteField, collection, getDocs } from "firebase/firestore";
 
 const env = await initializeTestEnvironment({
   projectId: "demo-kanban",
@@ -54,6 +54,16 @@ const tests = {
     await assertFails(setDoc(doc(ana, "users/ana/boards/b1/cards/c2"), { ...card, title: "" }));
     await assertFails(setDoc(doc(ana, "users/ana/boards/b1/cards/c2"), { ...card, color: "pink" }));
     await assertFails(setDoc(doc(ana, "users/ana/boards/b1/cards/c2"), { ...card, order: "1" }));
+  },
+  "tiempo estimado y subtareas": async () => {
+    await assertSucceeds(setDoc(doc(ana, "users/ana/boards/b1/cards/p1"), { ...card, title: "Hilux 2026" }));
+    await assertSucceeds(setDoc(doc(ana, "users/ana/boards/b1/cards/s1"), { ...card, title: "Cableado", estimate: 120, parentId: "p1" }));
+    await assertSucceeds(updateDoc(doc(ana, "users/ana/boards/b1/cards/s1"), { estimate: 300 }));
+    await assertSucceeds(updateDoc(doc(ana, "users/ana/boards/b1/cards/s1"), { estimate: deleteField() }));
+    await assertFails(setDoc(doc(ana, "users/ana/boards/b1/cards/s2"), { ...card, estimate: "5 h" }));
+    await assertFails(setDoc(doc(ana, "users/ana/boards/b1/cards/s2"), { ...card, estimate: -10 }));
+    await assertFails(setDoc(doc(ana, "users/ana/boards/b1/cards/s2"), { ...card, parentId: "" }));
+    await assertFails(setDoc(doc(beto, "users/ana/boards/b1/cards/s3"), { ...card, estimate: 60, parentId: "p1" }));
   },
   "ícono personalizado: solo el dueño, solo imágenes": async () => {
     const logo = { logo: "data:image/jpeg;base64,AAAA", updatedAt: now };

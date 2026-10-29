@@ -34,7 +34,7 @@ service cloud.firestore {
 
     function validCard() {
       let d = request.resource.data;
-      return d.keys().hasOnly(['title', 'notes', 'color', 'dueDate', 'columnId', 'order', 'createdAt', 'updatedAt'])
+      return d.keys().hasOnly(['title', 'notes', 'color', 'dueDate', 'columnId', 'order', 'createdAt', 'updatedAt', 'estimate', 'parentId'])
         && d.keys().hasAll(['title', 'notes', 'color', 'dueDate', 'columnId', 'order', 'createdAt', 'updatedAt'])
         && isText(d.title, 1, 200)
         && isText(d.notes, 0, 2000)
@@ -43,7 +43,10 @@ service cloud.firestore {
         && isText(d.columnId, 1, 40)
         && d.order is number
         && d.createdAt is number
-        && d.updatedAt is number;
+        && d.updatedAt is number
+        // Opcionales: tiempo estimado (minutos) y tarea principal (subtareas).
+        && (!('estimate' in d) || (d.estimate is number && d.estimate >= 0 && d.estimate <= 60000))
+        && (!('parentId' in d) || isText(d.parentId, 1, 40));
     }
 
     // Foto del ícono ya comprimida (data URL), máx. ~300 KB.

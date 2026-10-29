@@ -8,7 +8,7 @@
 
 import { watchBoards, createBoard, renameBoard, deleteBoard } from "../services/boards-service.js";
 import { watchCards } from "../services/cards-service.js";
-import { summarizeBoard, progressBarHtml, legendHtml, alertsHtml } from "../components/board-summary.js";
+import { summarizeBoard, progressBarHtml, legendHtml, alertsHtml, pendingText } from "../components/board-summary.js";
 import { actionSheet, confirmDialog, promptDialog } from "../ui/sheet.js";
 import { escapeHtml } from "../ui/dom.js";
 import { icons } from "../ui/icons.js";
@@ -67,7 +67,7 @@ export function renderBoards(container, user) {
     const sub = !loaded
       ? "Cargando…"
       : sum.total
-        ? `${sum.total} ${sum.total === 1 ? "tarea" : "tareas"} · ${sum.done} ${sum.done === 1 ? "hecha" : "hechas"}`
+        ? `${sum.total} ${sum.total === 1 ? "tarea" : "tareas"} · ${sum.done} ${sum.done === 1 ? "hecha" : "hechas"}${pendingText(sum)}`
         : "Sin tareas todavía";
     const alerts = loaded ? alertsHtml(sum) : "";
     return `

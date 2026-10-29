@@ -4,7 +4,9 @@
 //
 // Estructura: users/{uid}/boards/{boardId}/cards/{cardId}
 //   { title, notes, color, dueDate ("AAAA-MM-DD" o ""),
-//     columnId, order, createdAt, updatedAt }
+//     columnId, order, createdAt, updatedAt,
+//     estimate?  (minutos estimados; se omite si no hay),
+//     parentId?  (id de la tarea principal si es subtarea) }
 //
 // "order" es un número: las tarjetas de una columna se pintan de
 // menor a mayor. Al mover una tarjeta entre otras dos se le pone
@@ -15,8 +17,9 @@ import { db } from "../firebase-config.js";
 import {
   collection,
   doc,
-  addDoc,
+  setDoc,
   updateDoc,
+  deleteField,
   deleteDoc,
   onSnapshot,
   query,
@@ -42,22 +45,36 @@ export function orderBetween(prev, next) {
   return (prev + next) / 2;
 }
 
-export function addCard(uid, boardId, { title, notes = "", color = "", dueDate = "", columnId, order }) {
+// Arma el documento de una tarjeta nueva. Los campos opcionales solo se
+// escriben si tienen valor (así las tarjetas simples no los necesitan).
+function newCardData({ title, notes = "", color = "", dueDate = "", columnId, order, estimate = 0, parentId = "" }) {
   const now = Date.now();
-  return addDoc(cardsCol(uid, boardId), {
-    title,
-    notes,
-    color,
-    dueDate,
-    columnId,
-    order,
-    createdAt: now,
-    updatedAt: now,
-  });
+  const data = { title, notes, color, dueDate, columnId, order, createdAt: now, updatedAt: now };
+  if (estimate > 0) data.estimate = estimate;
+  if (parentId) data.parentId = parentId;
+  return data;
+}
+
+// El id se genera en el teléfono, así funciona igual sin conexión
+// (addDoc esperaría a que el servidor confirme).
+// Devuelve { id, saved } — saved es la Promise de la escritura.
+export function addCard(uid, boardId, card) {
+  const ref = doc(cardsCol(uid, boardId));
+  return { id: ref.id, saved: setDoc(ref, newCardData(card)) };
+}
+
+// Varias tarjetas en una sola escritura (ej. subtareas).
+export function addCards(uid, boardId, list) {
+  const batch = writeBatch(db);
+  list.forEach((card) => batch.set(doc(cardsCol(uid, boardId)), newCardData(card)));
+  return batch.commit();
 }
 
 export function updateCard(uid, boardId, cardId, changes) {
-  return updateDoc(cardRef(uid, boardId, cardId), { ...changes, updatedAt: Date.now() });
+  const data = { ...changes, updatedAt: Date.now() };
+  // Estimado en 0 = quitar el campo.
+  if ("estimate" in data && !(data.estimate > 0)) data.estimate = deleteField();
+  return updateDoc(cardRef(uid, boardId, cardId), data);
 }
 
 export function moveCard(uid, boardId, cardId, columnId, order) {

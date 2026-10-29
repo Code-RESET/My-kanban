@@ -12,6 +12,7 @@
 
 import { escapeHtml } from "../ui/dom.js";
 import { icons } from "../ui/icons.js";
+import { TASKS_KIND, stageColumns, formatEstimate } from "./task-tree.js";
 
 export const BOTTLENECK_MIN = 4;
 
@@ -22,6 +23,17 @@ export function columnAccent(index, total) {
   if (index === 0) return "slate";
   if (total > 1 && index === total - 1) return "green";
   return MIDDLE_ACCENTS[(index - 1) % MIDDLE_ACCENTS.length];
+}
+
+// Color de cada columna del tablero: "Tareas del día" va en índigo y
+// las etapas se colorean por su posición dentro del flujo.
+export function accentsFor(columns) {
+  const stages = stageColumns(columns);
+  const map = {};
+  columns.forEach((c) => {
+    map[c.id] = c.kind === TASKS_KIND ? "indigo" : columnAccent(stages.indexOf(c), stages.length);
+  });
+  return map;
 }
 
 // Devuelve el id de la columna que frena el flujo, o null.
@@ -59,7 +71,7 @@ export function formatDuration(ms) {
   return days === 1 ? "1 día" : `${days} días`;
 }
 
-export function insightsHtml({ cycleMs, doneCount, bottleneck }) {
+export function insightsHtml({ cycleMs, doneCount, bottleneck, pendingMin = 0 }) {
   const value = cycleMs == null ? "—" : formatDuration(cycleMs);
   const hint =
     cycleMs == null
@@ -83,6 +95,17 @@ export function insightsHtml({ cycleMs, doneCount, bottleneck }) {
         </span>
         ${bottleneck ? `<span class="metric-trend">${icons.trend}</span>` : ""}
       </div>
+      ${
+        pendingMin > 0
+          ? `<div class="metric metric-pending">
+               <span class="metric-text">
+                 <span class="metric-label">pendiente</span>
+                 <span class="metric-value">${formatEstimate(pendingMin)}</span>
+                 <span class="metric-hint">tiempo estimado por hacer</span>
+               </span>
+             </div>`
+          : ""
+      }
       <div class="insight-status">${status}</div>
     </section>`;
 }
