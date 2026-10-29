@@ -82,3 +82,35 @@ export function formatEstimate(min) {
   if (!h) return `${m} min`;
   return m ? `${h} h ${m} min` : `${h} h`;
 }
+
+// ---------- Reiniciar ("↺ Repetir") ----------
+
+// Planea regresar tarjetas al inicio para repetir un trabajo:
+//   - las tareas normales y subtareas -> primera etapa ("Por hacer")
+//   - las tareas principales          -> "Tareas del día" (o la primera etapa)
+// Todas las del grupo quedan en el orden en que se crearon (aunque alguna
+// nunca se haya movido), después de lo que ya había en el destino.
+// Devuelve [{ id, columnId, order, changed }]; changed = cambió de columna.
+// Si ninguna cambia de columna devuelve [] (no hay nada que repetir).
+export function planReset(columns, allCards, targets) {
+  const stageId = firstStageId(columns);
+  const tasksId = columns.find((c) => c.kind === TASKS_KIND)?.id || stageId;
+  const parents = new Set(allCards.map((c) => c.parentId).filter(Boolean));
+  const destOf = (card) => (parents.has(card.id) ? tasksId : stageId);
+  if (!targets.some((c) => c.columnId !== destOf(c))) return [];
+
+  const group = new Set(targets.map((c) => c.id));
+  const sorted = [...targets].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0) || a.order - b.order);
+
+  const lastOrder = {};
+  for (const card of allCards) {
+    if (group.has(card.id)) continue;
+    lastOrder[card.columnId] = Math.max(lastOrder[card.columnId] ?? -Infinity, card.order);
+  }
+  return sorted.map((card) => {
+    const dest = destOf(card);
+    const order = (Number.isFinite(lastOrder[dest]) ? lastOrder[dest] : 0) + 1000;
+    lastOrder[dest] = order;
+    return { id: card.id, columnId: dest, order, changed: card.columnId !== dest };
+  });
+}

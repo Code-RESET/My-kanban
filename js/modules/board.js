@@ -6,7 +6,7 @@
 // ============================================================
 
 import { watchBoard, renameBoard, deleteBoard, saveColumns } from "../services/boards-service.js";
-import { watchCards, addCard, addCards, updateCard, moveCard, deleteCard, deleteCards, orderBetween } from "../services/cards-service.js";
+import { watchCards, addCard, addCards, updateCard, moveCard, resetCards, deleteCard, deleteCards, orderBetween } from "../services/cards-service.js";
 import { columnHtml, addColumnHtml } from "../components/kanban-column.js";
 import { openCardSheet, openSubtasksSheet } from "../components/card-sheet.js";
 import { accentsFor, findBottleneck, averageCycleTime, insightsHtml } from "../components/board-insights.js";
@@ -19,6 +19,7 @@ import {
   leafCards,
   subtaskProgress,
   sumEstimate,
+  planReset,
 } from "../components/task-tree.js";
 import { enableDragDrop } from "../components/drag-drop.js";
 import { flowMapHtml, visibleColumnId, markActiveChip } from "../components/flow-map.js";
@@ -141,6 +142,8 @@ export function renderBoard(container, user, [boardId] = []) {
         parent: card.parentId ? cards.find((c) => c.id === card.parentId) || null : null,
         progress,
         canSubtask: !card.parentId && (inTasksColumn || children.length > 0),
+        // "↺ Repetir" solo si alguna subtarea ya avanzó (si no, no hay nada que regresar).
+        canReset: children.length > 0 && planReset(cols, cards, children).length > 0,
       };
       // Una tarea principal solo avanza cuando terminó todas sus subtareas.
       if (progress && progress.done < progress.total) opts.next = null;
@@ -238,6 +241,32 @@ export function renderBoard(container, user, [boardId] = []) {
     showToast(`${titles.length} ${titles.length === 1 ? "subtarea" : "subtareas"} en "${target?.name || "la primera columna"}"`);
   }
 
+  // "↺ Repetir": regresa tarjetas al inicio de un jalón, para trabajos repetitivos.
+  async function resetToStart(targets, question) {
+    const moves = planReset(columns(), cards, targets);
+    const count = moves.filter((m) => m.changed).length;
+    if (!count) {
+      showToast("Ya está todo al inicio.");
+      return;
+    }
+    const stage = columns().find((c) => c.id === firstStageId(columns()));
+    const ok = await confirmDialog(question(count, stage?.name || "el inicio"), { confirmText: "Regresar", destructive: false });
+    if (!ok) return;
+    resetCards(uid, boardId, moves).catch(toastError);
+    showToast(`↺ ${count} ${count === 1 ? "tarea regresó" : "tareas regresaron"} al inicio`);
+    boardEl.scrollTo({ left: 0, behavior: "smooth" });
+  }
+
+  function onResetSubtasks(cardId) {
+    const card = cards.find((c) => c.id === cardId);
+    if (!card) return;
+    resetToStart([card, ...childrenOf(cards, card.id)], (n, stage) => `¿Repetir "${card.title}"? Se ${n === 1 ? "regresa 1 tarea" : `regresan ${n} tareas`} a "${stage}".`);
+  }
+
+  function onResetBoard() {
+    resetToStart(cards, (n, stage) => `¿Regresar ${n} ${n === 1 ? "tarea" : "tareas"} a "${stage}"?`);
+  }
+
   async function onAddSubtasksQuick(cardId) {
     const card = cards.find((c) => c.id === cardId);
     if (!card) return;
@@ -321,8 +350,14 @@ export function renderBoard(container, user, [boardId] = []) {
     const hasTasksColumn = columns().some((c) => c.kind === TASKS_KIND);
     const items = [{ key: "rename", label: "Renombrar tablero" }];
     if (!hasTasksColumn) items.push({ key: "tasks-column", label: "Agregar columna «Tareas del día»" });
+    const startName = columns().find((c) => c.id === firstStageId(columns()))?.name || "el inicio";
+    items.push({ key: "reset", label: `↺ Regresar todo a «${startName}»` });
     items.push({ key: "delete", label: "Eliminar tablero", destructive: true });
     const choice = await actionSheet(board.name, items);
+    if (choice === "reset") {
+      onResetBoard();
+      return;
+    }
     if (choice === "tasks-column") {
       // Va al inicio: ahí viven las tareas principales con sus subtareas.
       const tasksColumn = { id: shortId(), name: "Tareas del día", kind: TASKS_KIND };
@@ -353,6 +388,7 @@ export function renderBoard(container, user, [boardId] = []) {
       if (action === "advance") onAdvance(cardId, actionEl);
       if (action === "jump") jumpToColumn(columnId);
       if (action === "add-subtasks") onAddSubtasksQuick(cardId);
+      if (action === "reset-subtasks") onResetSubtasks(cardId);
       return;
     }
     const cardEl = e.target.closest(".card");

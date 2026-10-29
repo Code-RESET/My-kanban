@@ -6,6 +6,7 @@ Tablero kanban personal, estilo iOS. PWA en HTML/CSS/JS puro (ES6 modules), sin 
 
 - **Tableros**: crea varios (Personal, Casa, Trabajo…). Cada uno inicia con *Por hacer → En curso → Hecho*.
 - **Tareas del día y subtareas**: columna inicial para tareas principales; sus subtareas (separadas por coma) caen en *Por hacer* y avanzan con ›. La principal muestra su avance y las horas que faltan.
+- **↺ Repetir**: para trabajos repetitivos, regresa de un toque las subtareas de una tarea (o todo el tablero, desde •••) a *Por hacer*, en su orden original.
 - **Tiempo estimado**: cada tarea lleva sus horas (1 h, 5 h…); el tablero y la lista suman lo pendiente.
 - **Tablero de control**: la lista de Tableros muestra el avance de cada uno (barra por colores, % terminado) y avisa cuello de botella y tareas vencidas.
 - **Mapa del flujo (teléfono)**: arriba del tablero, una pastilla por columna con su conteo; marca dónde estás y al tocarla salta a esa columna.
