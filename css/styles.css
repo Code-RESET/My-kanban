@@ -1278,3 +1278,51 @@ h1, h2, h3, p { margin: 0; }
 .card-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .card-actions .card-subtasks-btn { margin-top: 0; }
 .card-reset-btn { color: var(--c-orange); border-color: rgba(255, 149, 0, 0.45); }
+
+/* ============================================================
+   Tareas en orden debajo de la principal (v1.7.0)
+   ============================================================ */
+.card.is-step { margin-left: 14px; }
+.card.is-step::after {
+  /* Línea que une el paso con su tarea principal */
+  content: "";
+  position: absolute;
+  left: -10px;
+  top: -8px;
+  bottom: 50%;
+  width: 8px;
+  border-left: 2px solid var(--col-line, var(--separator));
+  border-bottom: 2px solid var(--col-line, var(--separator));
+  border-bottom-left-radius: 6px;
+}
+.card.is-step { overflow: visible; }
+.card.is-step[data-color]::before { border-radius: 10px 0 0 10px; }
+
+.step-number {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-right: 6px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--col, var(--accent));
+}
+.card-title-text { flex: 1; min-width: 0; }
+.card-title { justify-content: flex-start; }
+.card-title .card-check { margin-left: auto; }
+
+.card.is-locked { opacity: 0.55; }
+.card.is-locked .card-title-text { color: var(--text-2); }
+.step-lock { font-size: 12px; }
+
+/* Encabezado cuando los pasos están en otra columna que su principal */
+.step-group {
+  flex-shrink: 0; /* si la columna se llena, no debe aplastarse */
+  margin: 4px 2px -2px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

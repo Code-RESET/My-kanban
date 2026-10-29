@@ -20,6 +20,9 @@ import {
   subtaskProgress,
   sumEstimate,
   planReset,
+  stepState,
+  stepsOf,
+  stepHomeColumn,
 } from "../components/task-tree.js";
 import { enableDragDrop } from "../components/drag-drop.js";
 import { flowMapHtml, visibleColumnId, markActiveChip } from "../components/flow-map.js";
@@ -111,7 +114,7 @@ export function renderBoard(container, user, [boardId] = []) {
     const accents = accentsFor(cols);
     const bottleneckId = findBottleneck(stageColumns(cols), (id) => cardsOf(id).length);
     const lastId = doneColumnId(cols);
-    // Métricas con tareas reales: las principales con subtareas no cuentan.
+    // Métricas con tareas reales: las principales con tareas en orden no cuentan.
     const leaves = leafCards(cards);
     const doneLeaves = lastId ? leaves.filter((c) => c.columnId === lastId) : [];
 
@@ -132,21 +135,24 @@ export function renderBoard(container, user, [boardId] = []) {
       }))
     );
 
-    // Opciones propias de cada tarjeta: a qué tarea pertenece, su avance
-    // si es principal, y si puede recibir subtareas.
+    // Opciones propias de cada tarjeta: su avance si es principal, su número
+    // y bloqueo si es un paso en orden, y si puede recibir tareas en orden.
     const cardOpts = (card) => {
       const children = childrenOf(cards, card.id);
       const progress = children.length ? subtaskProgress(children, lastId) : null;
       const inTasksColumn = cols.find((c) => c.id === card.columnId)?.kind === TASKS_KIND;
+      const step = card.parentId ? stepState(cards, card, lastId) : null;
       const opts = {
-        parent: card.parentId ? cards.find((c) => c.id === card.parentId) || null : null,
         progress,
+        step,
         canSubtask: !card.parentId && (inTasksColumn || children.length > 0),
         // "↺ Repetir" solo si alguna subtarea ya avanzó (si no, no hay nada que regresar).
         canReset: children.length > 0 && planReset(cols, cards, children).length > 0,
       };
-      // Una tarea principal solo avanza cuando terminó todas sus subtareas.
+      // Una tarea principal solo avanza cuando terminó todas sus tareas, y
+      // un paso bloqueado espera a que se termine el anterior.
       if (progress && progress.done < progress.total) opts.next = null;
+      if (step?.locked) opts.next = null;
       return opts;
     };
 
@@ -159,6 +165,7 @@ export function renderBoard(container, user, [boardId] = []) {
             done: col.id === lastId,
             next: cols[i + 1] || null,
             cardOpts,
+            allCards: cards,
           })
         )
         .join("") + addColumnHtml();
@@ -194,14 +201,24 @@ export function renderBoard(container, user, [boardId] = []) {
 
   // ---------- Tarjetas ----------
 
+  // Las tareas en orden no pueden adelantarse: si a este paso todavía no
+  // le toca, se avisa cuál va primero y se cancela el movimiento.
+  function blockedStep(card, newColumnId) {
+    if (!card?.parentId || newColumnId === card.columnId) return false;
+    const { locked, current } = stepState(cards, card, doneColumnId(columns()));
+    if (!locked) return false;
+    showToast(`🔒 Primero termina "${current.title}"`);
+    return true;
+  }
+
   async function onAddCard(columnId) {
-    const inTasksColumn = columns().find((c) => c.id === columnId)?.kind === TASKS_KIND;
-    const result = await openCardSheet({ columns: columns(), columnId, allowSubtasks: inTasksColumn });
+    // Cualquier tarjeta nueva puede ser una tarea principal con tareas en orden.
+    const result = await openCardSheet({ columns: columns(), columnId, allowSubtasks: true });
     if (result?.action !== "save") return;
     const data = result.data;
     const { id, saved } = addCard(uid, boardId, { ...data, order: orderBetween(lastOrder(data.columnId), null) });
     saved.catch(toastError);
-    if (result.newSubtasks.length) addSubtasks({ id, title: data.title }, result.newSubtasks);
+    if (result.newSubtasks.length) addSubtasks({ id, title: data.title, columnId: data.columnId }, result.newSubtasks);
   }
 
   async function onOpenCard(cardId) {
@@ -212,25 +229,27 @@ export function renderBoard(container, user, [boardId] = []) {
     const result = await openCardSheet({
       card,
       columns: columns(),
-      subtasks: children.map((c) => ({ title: c.title, done: c.columnId === doneId, estimate: c.estimate })),
+      subtasks: stepsOf(cards, card.id).map((c) => ({ title: c.title, done: c.columnId === doneId, estimate: c.estimate })),
       allowSubtasks: !card.parentId,
     });
     if (!result) return;
     if (result.action === "delete") {
-      // Al borrar una tarea principal se borran también sus subtareas.
+      // Al borrar una tarea principal se borran también sus tareas en orden.
       if (children.length) deleteCards(uid, boardId, [card.id, ...children.map((c) => c.id)]).catch(toastError);
       else deleteCard(uid, boardId, card.id).catch(toastError);
       return;
     }
     const changes = { ...result.data };
+    if (blockedStep(card, changes.columnId)) changes.columnId = card.columnId;
     if (changes.columnId !== card.columnId) changes.order = orderBetween(lastOrder(changes.columnId), null);
     updateCard(uid, boardId, card.id, changes).catch(toastError);
-    if (result.newSubtasks.length) addSubtasks({ id: card.id, title: changes.title }, result.newSubtasks);
+    if (result.newSubtasks.length) addSubtasks({ id: card.id, title: changes.title, columnId: changes.columnId }, result.newSubtasks);
   }
 
-  // Crea las subtareas al final de la primera etapa del flujo ("Por hacer").
+  // Crea las tareas en orden debajo de su tarea principal: en la misma
+  // columna, o en "Por hacer" si la principal está en "Tareas del día".
   function addSubtasks(parent, titles) {
-    const targetId = firstStageId(columns());
+    const targetId = stepHomeColumn(columns(), parent.columnId);
     const target = columns().find((c) => c.id === targetId);
     let order = lastOrder(targetId);
     const list = titles.map((title) => {
@@ -238,7 +257,7 @@ export function renderBoard(container, user, [boardId] = []) {
       return { title, columnId: targetId, order, parentId: parent.id };
     });
     addCards(uid, boardId, list).catch(toastError);
-    showToast(`${titles.length} ${titles.length === 1 ? "subtarea" : "subtareas"} en "${target?.name || "la primera columna"}"`);
+    showToast(`${titles.length} ${titles.length === 1 ? "tarea" : "tareas"} en orden en "${target?.name || "la primera columna"}"`);
   }
 
   // "↺ Repetir": regresa tarjetas al inicio de un jalón, para trabajos repetitivos.
@@ -260,7 +279,7 @@ export function renderBoard(container, user, [boardId] = []) {
   function onResetSubtasks(cardId) {
     const card = cards.find((c) => c.id === cardId);
     if (!card) return;
-    resetToStart([card, ...childrenOf(cards, card.id)], (n, stage) => `¿Repetir "${card.title}"? Se ${n === 1 ? "regresa 1 tarea" : `regresan ${n} tareas`} a "${stage}".`);
+    resetToStart([card, ...childrenOf(cards, card.id)], (n) => `¿Repetir "${card.title}"? Se ${n === 1 ? "regresa 1 tarea" : `regresan ${n} tareas`} al inicio, en orden.`);
   }
 
   function onResetBoard() {
@@ -289,6 +308,10 @@ export function renderBoard(container, user, [boardId] = []) {
   }
 
   function onDrop({ cardId, columnId, prevId, nextId }) {
+    if (blockedStep(cards.find((c) => c.id === cardId), columnId)) {
+      draw(); // regresa la tarjeta a su lugar
+      return;
+    }
     const prev = cards.find((c) => c.id === prevId)?.order ?? null;
     const next = cards.find((c) => c.id === nextId)?.order ?? null;
     moveCard(uid, boardId, cardId, columnId, orderBetween(prev, next)).catch(toastError);
@@ -359,7 +382,7 @@ export function renderBoard(container, user, [boardId] = []) {
       return;
     }
     if (choice === "tasks-column") {
-      // Va al inicio: ahí viven las tareas principales con sus subtareas.
+      // Va al inicio: ahí viven las tareas principales.
       const tasksColumn = { id: shortId(), name: "Tareas del día", kind: TASKS_KIND };
       saveColumns(uid, boardId, [tasksColumn, ...columns()]).catch(toastError);
       boardEl.scrollTo({ left: 0, behavior: "smooth" });

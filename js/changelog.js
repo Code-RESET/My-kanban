@@ -11,6 +11,17 @@ export const APP_VERSION = globalThis.APP_VERSION;
 
 export const CHANGELOG = [
   {
+    version: "1.7.0",
+    date: "2026-10-29",
+    title: "Tareas en orden debajo de la principal",
+    items: [
+      "Las tareas secundarias van en fila justo debajo de su tarea principal, numeradas.",
+      "Se hacen en orden: solo la que sigue tiene ›; las demás esperan con 🔒.",
+      "Si intentas adelantar una, te avisa cuál va primero.",
+      "«↺ Repetir» las regresa debajo de su tarea principal, en orden.",
+    ],
+  },
+  {
     version: "1.6.0",
     date: "2026-10-29",
     title: "Repetir trabajos de un jalón",

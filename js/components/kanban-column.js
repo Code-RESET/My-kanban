@@ -7,7 +7,7 @@
 import { escapeHtml, formatShortDate, isOverdue } from "../ui/dom.js";
 import { isValidColor } from "./card-colors.js";
 import { icons } from "../ui/icons.js";
-import { formatEstimate } from "./task-tree.js";
+import { formatEstimate, arrangeColumn } from "./task-tree.js";
 
 // opts (los calcula modules/board.js):
 //   done      -> está en la última etapa (lleva ✓)
@@ -16,7 +16,8 @@ import { formatEstimate } from "./task-tree.js";
 //   progress  -> avance si es tarea principal ({ done, total, estLeft }) o null
 //   canSubtask-> muestra el botón "+ Agregar subtareas"
 //   canReset  -> muestra "↺ Repetir" (regresar sus subtareas al inicio)
-export function cardHtml(card, { done = false, next = null, parent = null, progress = null, canSubtask = false, canReset = false } = {}) {
+//   step      -> si es un paso en orden: { number, locked }
+export function cardHtml(card, { done = false, next = null, parent = null, progress = null, canSubtask = false, canReset = false, step = null } = {}) {
   const color = isValidColor(card.color) ? card.color : "";
   const due = card.dueDate
     ? `<span class="card-due ${isOverdue(card.dueDate) ? "overdue" : ""}">${icons.calendar}${formatShortDate(card.dueDate)}</span>`
@@ -29,13 +30,13 @@ export function cardHtml(card, { done = false, next = null, parent = null, progr
   const progressBlock = isParent
     ? `<div class="subtask-progress">
          <div class="subtask-bar"><span style="width:${Math.round((progress.done / progress.total) * 100)}%"></span></div>
-         <span class="subtask-text">${progress.done}/${progress.total} subtareas${
+         <span class="subtask-text">${progress.done} de ${progress.total} hechas${
            progress.estLeft > 0 ? ` · faltan ${formatEstimate(progress.estLeft)}` : progress.done === progress.total ? " · completa" : ""
          }</span>
        </div>`
     : "";
   const addSubtasks = canSubtask
-    ? `<button class="card-subtasks-btn" data-action="add-subtasks" data-card-id="${card.id}">${icons.plus}<span>${isParent ? "Subtareas" : "Agregar subtareas"}</span></button>`
+    ? `<button class="card-subtasks-btn" data-action="add-subtasks" data-card-id="${card.id}">${icons.plus}<span>${isParent ? "Tareas" : "Agregar tareas en orden"}</span></button>`
     : "";
   const resetBtn = canReset
     ? `<button class="card-subtasks-btn card-reset-btn" data-action="reset-subtasks" data-card-id="${card.id}">${icons.refresh}<span>Repetir</span></button>`
@@ -43,10 +44,12 @@ export function cardHtml(card, { done = false, next = null, parent = null, progr
   const actions = addSubtasks || resetBtn ? `<div class="card-actions">${addSubtasks}${resetBtn}</div>` : "";
 
   return `
-    <article class="card ${next ? "has-advance" : ""} ${isParent ? "is-parent" : ""} ${card.parentId ? "is-subtask" : ""}"
+    <article class="card ${next ? "has-advance" : ""} ${isParent ? "is-parent" : ""} ${card.parentId ? "is-subtask is-step" : ""} ${step?.locked ? "is-locked" : ""}"
              tabindex="0" role="button" data-card-id="${card.id}" ${color ? `data-color="${color}"` : ""}>
       ${parentLabel}
-      <p class="card-title">${escapeHtml(card.title)}${done ? `<span class="card-check" aria-label="Terminada">${icons.check}</span>` : ""}</p>
+      <p class="card-title">${
+        step ? `<span class="step-number">${step.locked ? `<span class="step-lock" aria-label="Espera su turno">🔒</span>` : ""}${step.number}.</span>` : ""
+      }<span class="card-title-text">${escapeHtml(card.title)}</span>${done ? `<span class="card-check" aria-label="Terminada">${icons.check}</span>` : ""}</p>
       ${notes}
       ${due || estimate ? `<div class="card-meta">${estimate}${due}</div>` : ""}
       ${progressBlock}
@@ -60,9 +63,17 @@ export function cardHtml(card, { done = false, next = null, parent = null, progr
     </article>`;
 }
 
-// opts: { accent, bottleneck, done, next, cardOpts } — los calcula modules/board.js.
-// cardOpts(card) devuelve las opciones propias de cada tarjeta (parent, progress, next).
-export function columnHtml(column, cards, { accent = "slate", bottleneck = false, done = false, next = null, cardOpts = () => ({}) } = {}) {
+// opts: { accent, bottleneck, done, next, cardOpts, allCards } — los calcula modules/board.js.
+// cardOpts(card) devuelve las opciones propias de cada tarjeta (progress, step, next…).
+// Los pasos se pintan en fila debajo de su tarea principal (ver arrangeColumn).
+export function columnHtml(column, cards, { accent = "slate", bottleneck = false, done = false, next = null, cardOpts = () => ({}), allCards = cards } = {}) {
+  const body = arrangeColumn(cards, allCards)
+    .map((item) =>
+      item.type === "group"
+        ? `<p class="step-group">↳ ${escapeHtml(item.parent.title)}</p>`
+        : cardHtml(item.card, { done, next, ...cardOpts(item.card) })
+    )
+    .join("");
   return `
     <section class="column ${bottleneck ? "is-bottleneck" : ""} ${column.kind === "tasks" ? "is-tasks" : ""}" data-column-id="${column.id}" data-accent="${accent}">
       <header class="column-header">
@@ -71,7 +82,7 @@ export function columnHtml(column, cards, { accent = "slate", bottleneck = false
         <button class="icon-btn small" data-action="column-menu" data-column-id="${column.id}" aria-label="Opciones de columna">${icons.more}</button>
       </header>
       <div class="column-cards" data-column-id="${column.id}">
-        ${cards.map((c) => cardHtml(c, { done, next, ...cardOpts(c) })).join("")}
+        ${body}
       </div>
       <button class="add-card-btn" data-action="add-card" data-column-id="${column.id}">${icons.plus}<span>Añadir tarjeta</span></button>
     </section>`;

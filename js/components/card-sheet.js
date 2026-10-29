@@ -23,7 +23,7 @@ export async function openCardSheet({ card = null, columns, columnId, subtasks =
   const subtaskList = subtasks.length
     ? `<ul class="subtask-list">${subtasks
         .map(
-          (t) => `<li class="${t.done ? "is-done" : ""}"><span class="subtask-mark">${t.done ? "✓" : "○"}</span>${escapeHtml(t.title)}${
+          (t, i) => `<li class="${t.done ? "is-done" : ""}"><span class="subtask-mark">${t.done ? "✓" : `${i + 1}.`}</span>${escapeHtml(t.title)}${
             t.estimate > 0 ? `<span class="subtask-est">${formatEstimate(t.estimate)}</span>` : ""
           }</li>`
         )
@@ -32,11 +32,11 @@ export async function openCardSheet({ card = null, columns, columnId, subtasks =
   const subtaskSection = allowSubtasks
     ? `<div class="form-group subtask-group">
          <div class="form-row form-row-col">
-           <span>Subtareas</span>
+           <span>Tareas en orden</span>
            ${subtaskList}
            <textarea class="input subtask-input" name="subtasks" rows="2" maxlength="1500"
                      placeholder="Agregar: cableado, fusibles, encintado…"></textarea>
-           <small class="form-hint">Sepáralas con coma. Caen en la primera columna del flujo.</small>
+           <small class="form-hint">Sepáralas con coma, en el orden en que se hacen. Van debajo de esta tarea.</small>
          </div>
        </div>`
     : "";
@@ -121,7 +121,7 @@ export async function openCardSheet({ card = null, columns, columnId, subtasks =
 
   // La confirmación se pide después de cerrar la hoja para no apilar dos hojas.
   if (result?.action === "delete") {
-    const extra = subtasks.length ? ` y sus ${subtasks.length} subtareas` : "";
+    const extra = subtasks.length ? ` y sus ${subtasks.length} tareas en orden` : "";
     const ok = await confirmDialog(`¿Eliminar "${current.title}"${extra}?`);
     return ok ? result : null;
   }
@@ -132,12 +132,12 @@ export async function openCardSheet({ card = null, columns, columnId, subtasks =
 // Resuelve con la lista de títulos (vacía si cancela).
 export async function openSubtasksSheet(parentTitle) {
   const titles = await openSheet({
-    title: `Subtareas de "${parentTitle}"`,
+    title: `Tareas en orden de "${parentTitle}"`,
     html: `
       <form class="sheet-form">
         <textarea class="input" name="subtasks" rows="4" maxlength="1500" required
                   placeholder="Cableado, fusibles, encintado, cálculo de voltaje, mediciones, armado"></textarea>
-        <small class="form-hint">Sepáralas con coma o una por renglón. Caen en la primera columna del flujo.</small>
+        <small class="form-hint">Sepáralas con coma o una por renglón, en el orden en que se hacen. Van debajo de la tarea principal.</small>
         <div class="sheet-buttons">
           <button type="button" class="btn btn-secondary" data-cancel>Cancelar</button>
           <button type="submit" class="btn btn-primary">Agregar</button>

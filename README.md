@@ -5,7 +5,7 @@ Tablero kanban personal, estilo iOS. PWA en HTML/CSS/JS puro (ES6 modules), sin 
 ## Qué hace
 
 - **Tableros**: crea varios (Personal, Casa, Trabajo…). Cada uno inicia con *Por hacer → En curso → Hecho*.
-- **Tareas del día y subtareas**: columna inicial para tareas principales; sus subtareas (separadas por coma) caen en *Por hacer* y avanzan con ›. La principal muestra su avance y las horas que faltan.
+- **Tareas en orden**: una tarea principal con tareas secundarias (separadas por coma) que van en fila debajo de ella, numeradas. Se hacen en orden: solo la siguiente tiene ›, las demás esperan con 🔒. La principal muestra su avance y las horas que faltan. La columna inicial "Tareas del día" es opcional.
 - **↺ Repetir**: para trabajos repetitivos, regresa de un toque las subtareas de una tarea (o todo el tablero, desde •••) a *Por hacer*, en su orden original.
 - **Tiempo estimado**: cada tarea lleva sus horas (1 h, 5 h…); el tablero y la lista suman lo pendiente.
 - **Tablero de control**: la lista de Tableros muestra el avance de cada uno (barra por colores, % terminado) y avisa cuello de botella y tareas vencidas.
@@ -44,7 +44,7 @@ js/components/             Piezas del tablero (solo UI)
   board-insights.js          colores por columna, cuello de botella, tiempo por tarea
   board-summary.js           resumen de cada tablero para la lista (barra, %, alertas)
   flow-map.js                mapa del flujo con pastillas (teléfono)
-  task-tree.js               tareas principales/subtareas y tiempo estimado (cálculos)
+  task-tree.js               tareas en orden (pasos), reinicio y tiempo estimado (cálculos)
   card-sheet.js              hoja para crear/editar tarjeta
   drag-drop.js               arrastrar con mouse y dedo
   card-colors.js             colores de etiqueta
