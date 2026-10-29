@@ -11,6 +11,16 @@ export const APP_VERSION = globalThis.APP_VERSION;
 
 export const CHANGELOG = [
   {
+    version: "1.6.0",
+    date: "2026-10-29",
+    title: "Repetir trabajos de un jalón",
+    items: [
+      "Botón «↺ Repetir» en la tarea principal: sus subtareas regresan a «Por hacer» en su orden original.",
+      "En el menú ••• del tablero: «Regresar todo a Por hacer».",
+      "Al repetir se reinicia el reloj, para que «tiempo por tarea» mida la nueva vuelta.",
+    ],
+  },
+  {
     version: "1.5.0",
     date: "2026-10-29",
     title: "Tareas con subtareas y tiempo estimado",

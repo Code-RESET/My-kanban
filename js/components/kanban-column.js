@@ -15,7 +15,8 @@ import { formatEstimate } from "./task-tree.js";
 //   parent    -> tarea principal de esta subtarea ({ title }) o null
 //   progress  -> avance si es tarea principal ({ done, total, estLeft }) o null
 //   canSubtask-> muestra el botón "+ Agregar subtareas"
-export function cardHtml(card, { done = false, next = null, parent = null, progress = null, canSubtask = false } = {}) {
+//   canReset  -> muestra "↺ Repetir" (regresar sus subtareas al inicio)
+export function cardHtml(card, { done = false, next = null, parent = null, progress = null, canSubtask = false, canReset = false } = {}) {
   const color = isValidColor(card.color) ? card.color : "";
   const due = card.dueDate
     ? `<span class="card-due ${isOverdue(card.dueDate) ? "overdue" : ""}">${icons.calendar}${formatShortDate(card.dueDate)}</span>`
@@ -36,6 +37,10 @@ export function cardHtml(card, { done = false, next = null, parent = null, progr
   const addSubtasks = canSubtask
     ? `<button class="card-subtasks-btn" data-action="add-subtasks" data-card-id="${card.id}">${icons.plus}<span>${isParent ? "Subtareas" : "Agregar subtareas"}</span></button>`
     : "";
+  const resetBtn = canReset
+    ? `<button class="card-subtasks-btn card-reset-btn" data-action="reset-subtasks" data-card-id="${card.id}">${icons.refresh}<span>Repetir</span></button>`
+    : "";
+  const actions = addSubtasks || resetBtn ? `<div class="card-actions">${addSubtasks}${resetBtn}</div>` : "";
 
   return `
     <article class="card ${next ? "has-advance" : ""} ${isParent ? "is-parent" : ""} ${card.parentId ? "is-subtask" : ""}"
@@ -45,7 +50,7 @@ export function cardHtml(card, { done = false, next = null, parent = null, progr
       ${notes}
       ${due || estimate ? `<div class="card-meta">${estimate}${due}</div>` : ""}
       ${progressBlock}
-      ${addSubtasks}
+      ${actions}
       ${
         next
           ? `<button class="card-advance" data-action="advance" data-card-id="${card.id}"

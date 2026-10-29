@@ -47,8 +47,7 @@ export function orderBetween(prev, next) {
 
 // Arma el documento de una tarjeta nueva. Los campos opcionales solo se
 // escriben si tienen valor (así las tarjetas simples no los necesitan).
-function newCardData({ title, notes = "", color = "", dueDate = "", columnId, order, estimate = 0, parentId = "" }) {
-  const now = Date.now();
+function newCardData({ title, notes = "", color = "", dueDate = "", columnId, order, estimate = 0, parentId = "" }, now = Date.now()) {
   const data = { title, notes, color, dueDate, columnId, order, createdAt: now, updatedAt: now };
   if (estimate > 0) data.estimate = estimate;
   if (parentId) data.parentId = parentId;
@@ -63,10 +62,13 @@ export function addCard(uid, boardId, card) {
   return { id: ref.id, saved: setDoc(ref, newCardData(card)) };
 }
 
-// Varias tarjetas en una sola escritura (ej. subtareas).
+// Varias tarjetas en una sola escritura (ej. subtareas). Cada una lleva
+// 1 ms más que la anterior: así "↺ Repetir" puede recuperar el orden en
+// que se escribieron.
 export function addCards(uid, boardId, list) {
+  const now = Date.now();
   const batch = writeBatch(db);
-  list.forEach((card) => batch.set(doc(cardsCol(uid, boardId)), newCardData(card)));
+  list.forEach((card, i) => batch.set(doc(cardsCol(uid, boardId)), newCardData(card, now + i)));
   return batch.commit();
 }
 
@@ -79,6 +81,18 @@ export function updateCard(uid, boardId, cardId, changes) {
 
 export function moveCard(uid, boardId, cardId, columnId, order) {
   return updateCard(uid, boardId, cardId, { columnId, order });
+}
+
+// Regresa varias tarjetas al inicio en una sola escritura ("↺ Repetir").
+// createdAt se reinicia para que "tiempo por tarea" mida la nueva vuelta;
+// 1 ms de diferencia entre cada una conserva su orden original.
+export function resetCards(uid, boardId, moves) {
+  const now = Date.now();
+  const batch = writeBatch(db);
+  moves.forEach(({ id, columnId, order }, i) =>
+    batch.update(cardRef(uid, boardId, id), { columnId, order, createdAt: now + i, updatedAt: now + i })
+  );
+  return batch.commit();
 }
 
 export function deleteCard(uid, boardId, cardId) {
