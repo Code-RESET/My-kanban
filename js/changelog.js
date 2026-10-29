@@ -11,6 +11,18 @@ export const APP_VERSION = globalThis.APP_VERSION;
 
 export const CHANGELOG = [
   {
+    version: "1.5.0",
+    date: "2026-10-29",
+    title: "Tareas con subtareas y tiempo estimado",
+    items: [
+      "Columna inicial «Tareas del día» para tus tareas principales.",
+      "Agrega subtareas separadas por coma: caen en «Por hacer» y avanzan con ›.",
+      "La tarea principal muestra su avance (2/6) y las horas que faltan.",
+      "Tiempo estimado en cada tarea (1 h, 5 h…) y total pendiente arriba del tablero.",
+      "En tableros existentes: ••• del tablero → «Agregar columna Tareas del día».",
+    ],
+  },
+  {
     version: "1.4.0",
     date: "2026-10-26",
     title: "Ve tu avance de un vistazo",

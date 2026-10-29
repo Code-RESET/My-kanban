@@ -6,10 +6,20 @@
 // ============================================================
 
 import { watchBoard, renameBoard, deleteBoard, saveColumns } from "../services/boards-service.js";
-import { watchCards, addCard, updateCard, moveCard, deleteCard, deleteCards, orderBetween } from "../services/cards-service.js";
+import { watchCards, addCard, addCards, updateCard, moveCard, deleteCard, deleteCards, orderBetween } from "../services/cards-service.js";
 import { columnHtml, addColumnHtml } from "../components/kanban-column.js";
-import { openCardSheet } from "../components/card-sheet.js";
-import { columnAccent, findBottleneck, averageCycleTime, insightsHtml } from "../components/board-insights.js";
+import { openCardSheet, openSubtasksSheet } from "../components/card-sheet.js";
+import { accentsFor, findBottleneck, averageCycleTime, insightsHtml } from "../components/board-insights.js";
+import {
+  TASKS_KIND,
+  stageColumns,
+  doneColumnId,
+  firstStageId,
+  childrenOf,
+  leafCards,
+  subtaskProgress,
+  sumEstimate,
+} from "../components/task-tree.js";
 import { enableDragDrop } from "../components/drag-drop.js";
 import { flowMapHtml, visibleColumnId, markActiveChip } from "../components/flow-map.js";
 import { actionSheet, confirmDialog, promptDialog } from "../ui/sheet.js";
@@ -97,34 +107,55 @@ export function renderBoard(container, user, [boardId] = []) {
     const scrollLeft = boardEl.scrollLeft;
 
     const cols = columns();
-    const bottleneckId = findBottleneck(cols, (id) => cardsOf(id).length);
-    const lastId = cols.length > 1 ? cols.at(-1).id : null;
-    const doneCards = lastId ? cardsOf(lastId) : [];
+    const accents = accentsFor(cols);
+    const bottleneckId = findBottleneck(stageColumns(cols), (id) => cardsOf(id).length);
+    const lastId = doneColumnId(cols);
+    // Métricas con tareas reales: las principales con subtareas no cuentan.
+    const leaves = leafCards(cards);
+    const doneLeaves = lastId ? leaves.filter((c) => c.columnId === lastId) : [];
 
     insightsEl.innerHTML = insightsHtml({
-      cycleMs: averageCycleTime(doneCards),
-      doneCount: doneCards.length,
+      cycleMs: averageCycleTime(doneLeaves),
+      doneCount: doneLeaves.length,
       bottleneck: cols.find((c) => c.id === bottleneckId) || null,
+      pendingMin: sumEstimate(leaves.filter((c) => c.columnId !== lastId)),
     });
 
     flowEl.innerHTML = flowMapHtml(
-      cols.map((col, i) => ({
+      cols.map((col) => ({
         id: col.id,
         name: col.name,
-        accent: columnAccent(i, cols.length),
+        accent: accents[col.id],
         count: cardsOf(col.id).length,
         bottleneck: col.id === bottleneckId,
       }))
     );
 
+    // Opciones propias de cada tarjeta: a qué tarea pertenece, su avance
+    // si es principal, y si puede recibir subtareas.
+    const cardOpts = (card) => {
+      const children = childrenOf(cards, card.id);
+      const progress = children.length ? subtaskProgress(children, lastId) : null;
+      const inTasksColumn = cols.find((c) => c.id === card.columnId)?.kind === TASKS_KIND;
+      const opts = {
+        parent: card.parentId ? cards.find((c) => c.id === card.parentId) || null : null,
+        progress,
+        canSubtask: !card.parentId && (inTasksColumn || children.length > 0),
+      };
+      // Una tarea principal solo avanza cuando terminó todas sus subtareas.
+      if (progress && progress.done < progress.total) opts.next = null;
+      return opts;
+    };
+
     boardEl.innerHTML =
       cols
         .map((col, i) =>
           columnHtml(col, cardsOf(col.id), {
-            accent: columnAccent(i, cols.length),
+            accent: accents[col.id],
             bottleneck: col.id === bottleneckId,
             done: col.id === lastId,
             next: cols[i + 1] || null,
+            cardOpts,
           })
         )
         .join("") + addColumnHtml();
@@ -161,24 +192,57 @@ export function renderBoard(container, user, [boardId] = []) {
   // ---------- Tarjetas ----------
 
   async function onAddCard(columnId) {
-    const result = await openCardSheet({ columns: columns(), columnId });
+    const inTasksColumn = columns().find((c) => c.id === columnId)?.kind === TASKS_KIND;
+    const result = await openCardSheet({ columns: columns(), columnId, allowSubtasks: inTasksColumn });
     if (result?.action !== "save") return;
     const data = result.data;
-    addCard(uid, boardId, { ...data, order: orderBetween(lastOrder(data.columnId), null) }).catch(toastError);
+    const { id, saved } = addCard(uid, boardId, { ...data, order: orderBetween(lastOrder(data.columnId), null) });
+    saved.catch(toastError);
+    if (result.newSubtasks.length) addSubtasks({ id, title: data.title }, result.newSubtasks);
   }
 
   async function onOpenCard(cardId) {
     const card = cards.find((c) => c.id === cardId);
     if (!card) return;
-    const result = await openCardSheet({ card, columns: columns() });
+    const doneId = doneColumnId(columns());
+    const children = childrenOf(cards, card.id);
+    const result = await openCardSheet({
+      card,
+      columns: columns(),
+      subtasks: children.map((c) => ({ title: c.title, done: c.columnId === doneId, estimate: c.estimate })),
+      allowSubtasks: !card.parentId,
+    });
     if (!result) return;
     if (result.action === "delete") {
-      deleteCard(uid, boardId, card.id).catch(toastError);
+      // Al borrar una tarea principal se borran también sus subtareas.
+      if (children.length) deleteCards(uid, boardId, [card.id, ...children.map((c) => c.id)]).catch(toastError);
+      else deleteCard(uid, boardId, card.id).catch(toastError);
       return;
     }
     const changes = { ...result.data };
     if (changes.columnId !== card.columnId) changes.order = orderBetween(lastOrder(changes.columnId), null);
     updateCard(uid, boardId, card.id, changes).catch(toastError);
+    if (result.newSubtasks.length) addSubtasks({ id: card.id, title: changes.title }, result.newSubtasks);
+  }
+
+  // Crea las subtareas al final de la primera etapa del flujo ("Por hacer").
+  function addSubtasks(parent, titles) {
+    const targetId = firstStageId(columns());
+    const target = columns().find((c) => c.id === targetId);
+    let order = lastOrder(targetId);
+    const list = titles.map((title) => {
+      order = orderBetween(order, null);
+      return { title, columnId: targetId, order, parentId: parent.id };
+    });
+    addCards(uid, boardId, list).catch(toastError);
+    showToast(`${titles.length} ${titles.length === 1 ? "subtarea" : "subtareas"} en "${target?.name || "la primera columna"}"`);
+  }
+
+  async function onAddSubtasksQuick(cardId) {
+    const card = cards.find((c) => c.id === cardId);
+    if (!card) return;
+    const titles = await openSubtasksSheet(card.title);
+    if (titles.length) addSubtasks(card, titles);
   }
 
   // Botón › de la tarjeta: la pasa al final de la siguiente columna.
@@ -254,10 +318,18 @@ export function renderBoard(container, user, [boardId] = []) {
 
   async function onBoardMenu() {
     if (!board) return;
-    const choice = await actionSheet(board.name, [
-      { key: "rename", label: "Renombrar tablero" },
-      { key: "delete", label: "Eliminar tablero", destructive: true },
-    ]);
+    const hasTasksColumn = columns().some((c) => c.kind === TASKS_KIND);
+    const items = [{ key: "rename", label: "Renombrar tablero" }];
+    if (!hasTasksColumn) items.push({ key: "tasks-column", label: "Agregar columna «Tareas del día»" });
+    items.push({ key: "delete", label: "Eliminar tablero", destructive: true });
+    const choice = await actionSheet(board.name, items);
+    if (choice === "tasks-column") {
+      // Va al inicio: ahí viven las tareas principales con sus subtareas.
+      const tasksColumn = { id: shortId(), name: "Tareas del día", kind: TASKS_KIND };
+      saveColumns(uid, boardId, [tasksColumn, ...columns()]).catch(toastError);
+      boardEl.scrollTo({ left: 0, behavior: "smooth" });
+      return;
+    }
     if (choice === "rename") {
       const name = await promptDialog("Renombrar tablero", { value: board.name });
       if (name) renameBoard(uid, boardId, name).catch(toastError);
@@ -280,6 +352,7 @@ export function renderBoard(container, user, [boardId] = []) {
       if (action === "board-menu") onBoardMenu();
       if (action === "advance") onAdvance(cardId, actionEl);
       if (action === "jump") jumpToColumn(columnId);
+      if (action === "add-subtasks") onAddSubtasksQuick(cardId);
       return;
     }
     const cardEl = e.target.closest(".card");

@@ -5,6 +5,8 @@ Tablero kanban personal, estilo iOS. PWA en HTML/CSS/JS puro (ES6 modules), sin 
 ## Qué hace
 
 - **Tableros**: crea varios (Personal, Casa, Trabajo…). Cada uno inicia con *Por hacer → En curso → Hecho*.
+- **Tareas del día y subtareas**: columna inicial para tareas principales; sus subtareas (separadas por coma) caen en *Por hacer* y avanzan con ›. La principal muestra su avance y las horas que faltan.
+- **Tiempo estimado**: cada tarea lleva sus horas (1 h, 5 h…); el tablero y la lista suman lo pendiente.
 - **Tablero de control**: la lista de Tableros muestra el avance de cada uno (barra por colores, % terminado) y avisa cuello de botella y tareas vencidas.
 - **Mapa del flujo (teléfono)**: arriba del tablero, una pastilla por columna con su conteo; marca dónde estás y al tocarla salta a esa columna.
 - **Columnas**: añadir, renombrar, mover izquierda/derecha y eliminar.
@@ -41,6 +43,7 @@ js/components/             Piezas del tablero (solo UI)
   board-insights.js          colores por columna, cuello de botella, tiempo por tarea
   board-summary.js           resumen de cada tablero para la lista (barra, %, alertas)
   flow-map.js                mapa del flujo con pastillas (teléfono)
+  task-tree.js               tareas principales/subtareas y tiempo estimado (cálculos)
   card-sheet.js              hoja para crear/editar tarjeta
   drag-drop.js               arrastrar con mouse y dedo
   card-colors.js             colores de etiqueta
@@ -65,8 +68,8 @@ tests/                     Prueba de reglas (solo desarrollo)
 ## Datos en Firestore
 
 ```
-users/{uid}/boards/{boardId}               { name, columns: [{id, name}], createdAt, updatedAt }
-users/{uid}/boards/{boardId}/cards/{id}    { title, notes, color, dueDate, columnId, order, createdAt, updatedAt }
+users/{uid}/boards/{boardId}               { name, columns: [{id, name, kind?}], createdAt, updatedAt }
+users/{uid}/boards/{boardId}/cards/{id}    { title, notes, color, dueDate, columnId, order, createdAt, updatedAt, estimate?, parentId? }
 users/{uid}/settings/app                   { logo, updatedAt }
 ```
 

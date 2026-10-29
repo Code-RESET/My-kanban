@@ -4,7 +4,8 @@
 // hablan con Firestore directo: pasan por este archivo.
 //
 // Estructura: users/{uid}/boards/{boardId}
-//   { name, columns: [{ id, name }], createdAt, updatedAt }
+//   { name, columns: [{ id, name, kind? }], createdAt, updatedAt }
+//   kind: "tasks" marca la columna inicial "Tareas del día".
 // Las tarjetas viven en la subcolección .../cards (cards-service.js).
 // ============================================================
 
@@ -22,7 +23,12 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { shortId } from "../ui/dom.js";
 
-export const DEFAULT_COLUMNS = ["Por hacer", "En curso", "Hecho"];
+export const DEFAULT_COLUMNS = [
+  { name: "Tareas del día", kind: "tasks" },
+  { name: "Por hacer" },
+  { name: "En curso" },
+  { name: "Hecho" },
+];
 
 const boardsCol = (uid) => collection(db, "users", uid, "boards");
 const boardRef = (uid, boardId) => doc(db, "users", uid, "boards", boardId);
@@ -46,7 +52,7 @@ export async function createBoard(uid, name) {
   const now = Date.now();
   const ref = await addDoc(boardsCol(uid), {
     name,
-    columns: DEFAULT_COLUMNS.map((colName) => ({ id: shortId(), name: colName })),
+    columns: DEFAULT_COLUMNS.map((col) => ({ id: shortId(), ...col })),
     createdAt: now,
     updatedAt: now,
   });

@@ -38,6 +38,7 @@ const CORE_ASSETS = [
   "./js/components/drag-drop.js",
   "./js/components/flow-map.js",
   "./js/components/kanban-column.js",
+  "./js/components/task-tree.js",
   "./js/ui/brand.js",
   "./js/ui/dom.js",
   "./js/ui/drawer.js",

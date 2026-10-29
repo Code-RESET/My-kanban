@@ -582,6 +582,8 @@ h1, h2, h3, p { margin: 0; }
   overflow: hidden;
 }
 .card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Las tarjetas nunca se encogen: si no caben, la columna hace scroll */
+.card { flex-shrink: 0; }
 .card.pressing { transform: scale(0.97); }
 .card.dragging { display: none; }
 
@@ -1181,3 +1183,93 @@ h1, h2, h3, p { margin: 0; }
   :root .flow-chip.is-bottleneck[data-accent] { --acc: var(--danger); }
   .flow-chip.is-bottleneck .flow-count { color: var(--danger); }
 }
+
+/* ============================================================
+   Tareas principales, subtareas y tiempo estimado (v1.5.0)
+   ============================================================ */
+
+/* Columna inicial "Tareas del día": índigo */
+.column[data-accent="indigo"] { --col: #5856d6; --col-soft: rgba(88, 86, 214, 0.09); --col-line: rgba(88, 86, 214, 0.35); }
+:root[data-theme="dark"] .column[data-accent="indigo"] { --col: #8e8cff; --col-soft: rgba(142, 140, 255, 0.12); }
+[data-accent="indigo"] { --acc: #5856d6; }
+:root[data-theme="dark"] [data-accent="indigo"] { --acc: #8e8cff; }
+
+/* Subtarea: nombre de su tarea principal arriba del título */
+.card-parent {
+  margin-bottom: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Tiempo estimado en la tarjeta */
+.card-meta { flex-wrap: wrap; }
+.card-estimate {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--fill);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Tarea principal: barra de avance de sus subtareas */
+.card.is-parent { border: 1px solid var(--col-line, var(--separator)); }
+.subtask-progress { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
+.subtask-bar { height: 6px; border-radius: 999px; background: var(--fill); overflow: hidden; }
+.subtask-bar span { display: block; height: 100%; border-radius: 999px; background: var(--c-green); transition: width 0.3s; }
+:root[data-theme="dark"] .subtask-bar span { box-shadow: 0 0 8px var(--c-green); }
+.subtask-text { font-size: 12px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+
+.card-subtasks-btn {
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border: 1px dashed var(--col-line, var(--separator));
+  border-radius: 999px;
+  background: none;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.card-subtasks-btn .icon { width: 14px; height: 14px; }
+.card-subtasks-btn:active { background: var(--fill); }
+
+/* Panel: segunda métrica "pendiente" */
+.metric-pending { padding-left: 16px; border-left: 1px solid var(--separator); }
+.metric-pending .metric-value { color: var(--accent); }
+.insights.is-alert .metric-pending .metric-value { color: var(--accent); }
+@media (max-width: 767px) {
+  .metric-pending { padding-left: 10px; }
+}
+
+/* Hoja de tarjeta: horas y lista de subtareas */
+.hours-field { display: inline-flex; align-items: center; gap: 6px; color: var(--text-2); }
+.hours-input {
+  width: 84px;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 8px;
+  background: var(--fill);
+  color: var(--text);
+  font: inherit;
+  font-size: 17px;
+  text-align: right;
+}
+.form-row-col { flex-direction: column; align-items: stretch; gap: 8px; padding: 10px 14px; }
+.form-hint { font-size: 12px; color: var(--text-2); }
+.subtask-input { background: var(--fill); }
+.subtask-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.subtask-list li { display: flex; align-items: center; gap: 8px; font-size: 15px; }
+.subtask-list li.is-done { color: var(--text-2); text-decoration: line-through; }
+.subtask-mark { width: 18px; text-align: center; color: var(--c-green); }
+.subtask-est { margin-left: auto; font-size: 12px; color: var(--text-2); text-decoration: none; }

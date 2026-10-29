@@ -6,38 +6,44 @@
 // Solo calcula y genera HTML; boards.js le pasa los datos.
 // ============================================================
 
-import { columnAccent, findBottleneck } from "./board-insights.js";
+import { accentsFor, findBottleneck } from "./board-insights.js";
+import { stageColumns, doneColumnId, leafCards, sumEstimate, formatEstimate } from "./task-tree.js";
 import { escapeHtml, isOverdue } from "../ui/dom.js";
 
-// Cuenta tarjetas por columna. Las huérfanas (columna borrada) van a
-// la primera, igual que en la vista del tablero.
+// Cuenta tareas por columna. Las huérfanas (columna borrada) van a
+// la primera, igual que en la vista del tablero. Las tareas principales
+// con subtareas no cuentan: su avance ya está en sus subtareas.
 export function summarizeBoard(columns = [], cards = []) {
   const ids = new Set(columns.map((c) => c.id));
   const counts = Object.fromEntries(columns.map((c) => [c.id, 0]));
   const firstId = columns[0]?.id;
-  for (const card of cards) {
+  const leaves = leafCards(cards);
+  for (const card of leaves) {
     const colId = ids.has(card.columnId) ? card.columnId : firstId;
     if (colId) counts[colId]++;
   }
 
-  const lastId = columns.length > 1 ? columns.at(-1).id : null;
-  const total = cards.length;
+  const lastId = doneColumnId(columns);
+  const total = leaves.length;
   const done = lastId ? counts[lastId] : 0;
-  const bottleneckId = findBottleneck(columns, (id) => counts[id]);
-  const overdue = cards.filter((c) => c.columnId !== lastId && isOverdue(c.dueDate)).length;
+  const bottleneckId = findBottleneck(stageColumns(columns), (id) => counts[id]);
+  const pending = leaves.filter((c) => c.columnId !== lastId);
+  const overdue = pending.filter((c) => isOverdue(c.dueDate)).length;
+  const accents = accentsFor(columns);
 
   return {
     total,
     done,
     pct: total ? Math.round((done / total) * 100) : 0,
     overdue,
+    pendingMin: sumEstimate(pending),
     bottleneck: columns.find((c) => c.id === bottleneckId) || null,
-    segments: columns.map((col, i) => ({
-      name: col.name,
-      count: counts[col.id],
-      accent: columnAccent(i, columns.length),
-    })),
+    segments: columns.map((col) => ({ name: col.name, count: counts[col.id], accent: accents[col.id] })),
   };
+}
+
+export function pendingText(summary) {
+  return summary.pendingMin > 0 ? ` · faltan ${formatEstimate(summary.pendingMin)}` : "";
 }
 
 // Barra apilada: cada sección mide según sus tarjetas y lleva el color de su columna.
